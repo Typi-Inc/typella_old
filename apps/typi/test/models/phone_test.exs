@@ -77,4 +77,18 @@ defmodule Typi.PhoneTest do
     assert {:error, changeset} = Repo.insert(changeset)
     assert {:number, {"invalid phone number", []}} in changeset.errors
   end
+
+  test "changeset is invalid if region's length is not in range (2, 3)" do
+    changeset = %Phone{}
+    |> Phone.changeset(Map.put(@valid_attrs, :region, "ADASDA"))
+
+    assert {:error, changeset} = Repo.insert(changeset)
+    assert {:region, {"should be at most %{count} character(s)", [count: 3]}} in changeset.errors
+
+    changeset = %Phone{}
+    |> Phone.changeset(Map.put(@valid_attrs, :region, "A"))
+
+    assert {:error, changeset} = Repo.insert(changeset)
+    assert {:region, {"should be at least %{count} character(s)", [count: 2]}} in changeset.errors
+  end
 end

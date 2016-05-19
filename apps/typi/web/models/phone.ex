@@ -17,6 +17,7 @@ defmodule Typi.Phone do
     struct
     |> cast(params, [:country_code, :number, :region])
     |> validate_required([:country_code, :number, :region])
+    |> validate_length(:region, min: 2, max: 3)
     |> validate_phone
     |> unique_constraint(:number, name: :phones_country_code_number_index)
   end
@@ -31,6 +32,7 @@ defmodule Typi.Phone do
     end
     |> case do
       true -> changeset
+      %Ecto.Changeset{valid?: false} -> changeset
       _ -> add_error(changeset, :number, "invalid phone number")
     end
   end
