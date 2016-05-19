@@ -23,16 +23,15 @@ defmodule Typi.Phone do
 
   def validate_phone(changeset) do
     # TODO change to with else when elixir 1.3 is out
-    # TODO improve implementation
+    # TODO improve error messaging, i.e. invalid country code, invalid number etc
     with %Ecto.Changeset{valid?: true, changes:
           %{country_code: country_code, number: number, region: region}} <- changeset,
-        {:ok, phone_number} <- ExPhoneNumber.parse("#{country_code}#{number}", region),
-        true <- ExPhoneNumber.is_valid_number?(phone_number) do
-      {:ok, phone_number}
+        {:ok, phone_number} <- ExPhoneNumber.parse("#{country_code}#{number}", region) do
+      ExPhoneNumber.is_valid_number?(phone_number)
     end
     |> case do
-      {:ok, _} -> changeset
-      _ -> add_error(changeset, :number, "not valid")
+      true -> changeset
+      _ -> add_error(changeset, :number, "invalid phone number")
     end
   end
 end

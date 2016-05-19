@@ -61,4 +61,20 @@ defmodule Typi.PhoneTest do
       assert number == @valid_attrs[:number]
       assert country_code == new_country_code
   end
+
+  test "changeset is invalid if country_code is not of appropriate format" do
+    changeset = %Phone{}
+    |> Phone.changeset(Map.put(@valid_attrs, :country_code, "+123123"))
+
+    assert {:error, changeset} = Repo.insert(changeset)
+    assert {:number, {"invalid phone number", []}} in changeset.errors
+  end
+
+  test "changeset is invalid if number is not of appropriate format" do
+    changeset = %Phone{}
+    |> Phone.changeset(Map.put(@valid_attrs, :number, "123123123123123123123123123"))
+
+    assert {:error, changeset} = Repo.insert(changeset)
+    assert {:number, {"invalid phone number", []}} in changeset.errors
+  end
 end
