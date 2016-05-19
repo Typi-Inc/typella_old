@@ -5,6 +5,7 @@ defmodule Typi.Repo.Migrations.CreatePhone do
     create table(:phones) do
       add :country_code, :string
       add :number, :string
+      add :region, :string
       add :user_id, references(:users, on_delete: :nothing)
 
       timestamps
