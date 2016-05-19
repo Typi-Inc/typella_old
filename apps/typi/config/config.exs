@@ -13,8 +13,8 @@ config :typi,
 config :typi, Typi.Endpoint,
   url: [host: "localhost"],
   root: Path.dirname(__DIR__),
-  secret_key_base: "SUNDh/UKDDMrR1mZuD6rsTvFwuA28yA38N/0mf+N7yYvExqsCeSR5cszCynbWb93",
-  render_errors: [view: Typi.ErrorView, accepts: ~w(html json)],
+  secret_key_base: "f8XY4OksMiL1C7JmdnaduKsBXhMXDltP7RUSjDi+Dwob+3j6lJDFtPKZteuLakW8",
+  render_errors: [view: Typi.ErrorView, accepts: ~w(json)],
   pubsub: [name: Typi.PubSub,
            adapter: Phoenix.PubSub.PG2]
 

@@ -21,6 +21,7 @@ defmodule Typi.ModelCase do
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
+      import Typi.TestHelpers
       import Typi.ModelCase
     end
   end

@@ -22,8 +22,8 @@ defmodule Typi.Mixfile do
   # Type `mix help compile.app` for more information.
   def application do
     [mod: {Typi, []},
-     applications: [:phoenix, :phoenix_pubsub, :phoenix_html, :cowboy, :logger, :gettext,
-                    :phoenix_ecto, :postgrex]]
+     applications: [:phoenix, :phoenix_pubsub, :cowboy, :logger, :gettext,
+                    :phoenix_ecto, :postgrex, :comeonin, :ex_phone_number]]
   end
 
   # Specifies which paths to compile per environment.
@@ -34,14 +34,14 @@ defmodule Typi.Mixfile do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
-    [{:phoenix, "~> 1.2.0-rc"},
-     {:phoenix_pubsub, "~> 1.0.0-rc"},
-     {:phoenix_ecto, "~> 3.0-rc"},
+    [{:phoenix, git: "https://github.com/phoenixframework/phoenix"},
+     {:phoenix_pubsub, git: "https://github.com/phoenixframework/phoenix_pubsub", override: true},
+     {:phoenix_ecto, git: "https://github.com/phoenixframework/phoenix_ecto", override: true},
      {:postgrex, ">= 0.0.0"},
-     {:phoenix_html, "~> 2.5"},
-     {:phoenix_live_reload, "~> 1.0", only: :dev},
      {:gettext, "~> 0.11"},
-     {:cowboy, "~> 1.0"}]
+     {:cowboy, "~> 1.0"},
+     {:comeonin, "~> 2.3"},
+     {:ex_phone_number, git: "https://github.com/socialpaymentsbv/ex_phone_number", branch: "develop"}]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
