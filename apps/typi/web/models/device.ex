@@ -16,7 +16,7 @@ defmodule Typi.Device do
     struct
     |> cast(params, [:uuid, :user_id])
     |> validate_required([:uuid, :user_id])
-    |> assoc_constraint(:user)
     |> unique_constraint(:uuid)
+    |> assoc_constraint(:user)
   end
 end

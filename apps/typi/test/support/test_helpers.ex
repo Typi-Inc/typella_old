@@ -10,16 +10,22 @@ defmodule Typi.TestHelpers do
     |> Repo.insert!
   end
 
-  def device_changeset(user, attrs) do
+  def device_changeset(user, attrs \\ %{}) do
     user
     |> Ecto.build_assoc(:devices)
     |> Device.changeset(attrs)
   end
 
-  def insert_phone(attrs \\ %{}) do
-    %Phone{}
-    |> Phone.changeset(attrs)
+  def insert_phone(user, attrs \\ %{}) do
+    user
+    |> Ecto.build_assoc(:phones, attrs)
     |> Repo.insert!
+  end
+
+  def phone_changeset(user, attrs \\ %{}) do
+    user
+    |> Ecto.build_assoc(:phones)
+    |> Phone.changeset(attrs)
   end
 
   def insert_user(attrs \\ %{}) do
