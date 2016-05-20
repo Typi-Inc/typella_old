@@ -3,6 +3,7 @@ defmodule Typi.Phone do
 
   schema "phones" do
     field :country_code, :string
+    field :is_verified, :boolean, default: false
     field :number, :string
     field :region, :string
     belongs_to :user, Typi.User
@@ -15,11 +16,12 @@ defmodule Typi.Phone do
   """
   def changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:country_code, :number, :region])
-    |> validate_required([:country_code, :number, :region])
+    |> cast(params, [:country_code, :is_verified, :number, :region, :user_id])
+    |> validate_required([:country_code, :is_verified, :number, :region, :user_id])
     |> validate_length(:region, min: 2, max: 3)
     |> validate_phone
     |> unique_constraint(:number, name: :phones_country_code_number_index)
+    |> assoc_constraint(:user)
   end
 
   def validate_phone(changeset) do
