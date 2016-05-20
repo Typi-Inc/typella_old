@@ -16,6 +16,6 @@ defmodule Typi.User do
   def changeset(struct, params \\ %{}) do
     struct
     |> cast(params, [:name, :profile_pic])
-    |> validate_required([:name, :profile_pic])
+    |> validate_required([])
   end
 end
