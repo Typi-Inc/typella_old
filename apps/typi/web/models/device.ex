@@ -14,8 +14,9 @@ defmodule Typi.Device do
   # TODO Do I need to hash device's uuid?
   def changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:uuid])
-    |> validate_required([:uuid])
+    |> cast(params, [:uuid, :user_id])
+    |> validate_required([:uuid, :user_id])
+    |> assoc_constraint(:user)
     |> unique_constraint(:uuid)
   end
 end

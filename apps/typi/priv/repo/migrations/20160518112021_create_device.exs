@@ -3,8 +3,8 @@ defmodule Typi.Repo.Migrations.CreateDevice do
 
   def change do
     create table(:devices) do
-      add :uuid, :string
-      add :user_id, references(:users, on_delete: :nothing)
+      add :uuid, :string, null: false
+      add :user_id, references(:users, on_delete: :nothing), null: false
 
       timestamps
     end
