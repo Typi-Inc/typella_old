@@ -1,8 +1,5 @@
 defmodule Typi.TestHelpers do
-  alias Typi.Repo
-  alias Typi.Device
-  alias Typi.Phone
-  alias Typi.User
+  alias Typi.{Repo, Device, Phone, User}
 
   def insert_device(user, attrs \\ %{}) do
     user

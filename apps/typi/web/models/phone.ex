@@ -18,13 +18,18 @@ defmodule Typi.Phone do
     struct
     |> cast(params, [:country_code, :is_verified, :number, :region, :user_id])
     |> validate_required([:country_code, :is_verified, :number, :region, :user_id])
-    |> validate_length(:region, min: 2, max: 3)
     |> validate_phone
     |> unique_constraint(:number, name: :phones_country_code_number_index)
     |> assoc_constraint(:user)
   end
 
   def validate_phone(changeset) do
+    changeset
+    |> validate_length(:region, min: 2, max: 3)
+    |> validate_country_code_and_number
+  end
+
+  defp validate_country_code_and_number(changeset) do
     # TODO change to with else when elixir 1.3 is out
     # TODO improve error messaging, i.e. invalid country code, invalid number etc
     with %Ecto.Changeset{valid?: true, changes:
