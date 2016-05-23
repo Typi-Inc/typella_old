@@ -34,33 +34,4 @@ defmodule Typi.RegistrationController do
       body: otp
     ])
   end
-
-  # def register(conn, %{"user" => user_params}) do
-  #   changeset =
-  #     %Registration{}
-  #     |> Registration.changeset(Map.put(user_params, "otp", "1234"))
-  #
-  #   case insert_user(changeset) do
-  #     {:ok, user} ->
-  #       conn
-  #       |> put_status(:created)
-  #       |> json(%{user_id: user.id})
-  #     {:error, changeset} ->
-  #       conn
-  #       |> put_status(:unprocessable_entity)
-  #       # TODO Do I need action parameters to send?
-  #       |> render(Typi.ChangesetView, "error.json", changeset: %{changeset | action: :registration})
-  #   end
-  # end
-  #
-  # def insert_user(changeset) do
-  #   if changeset.valid? do
-  #     changeset
-  #     |> Ecto.Changeset.apply_changes # becomes registration
-  #     |> Registration.to_user
-  #     |> Repo.insert
-  #   else
-  #     {:error, changeset}
-  #   end
-  # end
 end

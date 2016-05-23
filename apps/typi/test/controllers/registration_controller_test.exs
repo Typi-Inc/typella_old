@@ -56,30 +56,4 @@ defmodule Typi.RegistrationControllerTest do
       # assert called Typi.ExTwilio.InMemory.Message.create
     end
   end
-
-  # test "registers new user with country_code, region, number and uuid of the device", %{conn: conn} do
-  #   conn = post conn, registration_path(conn, :register), user: @valid_attrs
-  #   assert json_response(conn, 201)["user_id"]
-  #   assert Repo.get_by(Phone, Map.take(@valid_attrs, [:country_code, :region, :number]))
-  #   assert Repo.get_by(Device, Map.take(@valid_attrs, [:uuid]))
-  # end
-  #
-  # test "if user already exists with given phone, registers new device" do
-  #   user = insert_user(%User{
-  #     devices: [struct(Device, Map.put(@valid_attrs, :uuid, "699F9C00-92DC-4B5C-9464-7971F01F8370"))],
-  #     phones: [struct(Phone, @valid_attrs)]
-  #   })
-  #
-  #   conn = post conn, registration_path(conn, :register), user: @valid_attrs
-  #   assert json_response(conn, 201)["user_id"] == user.id
-  # end
-  #
-  # test "if user already exists with given device, registers new phone" do
-  #
-  # end
-  #
-  # test "after registering user generates OTP and sends it via twilio" do
-  #   conn = post conn, registration_path(conn, :register), user: @valid_attrs
-  #   assert json_response(conn, 201)["user_id"]
-  # end
 end
