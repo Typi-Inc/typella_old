@@ -25,9 +25,8 @@ defmodule Typi.TestHelpers do
     |> Phone.changeset(attrs)
   end
 
-  def insert_user(attrs \\ %{}) do
-    %User{}
-    |> User.changeset(attrs)
+  def insert_user(user \\ %User{}) do
+    user
     |> Repo.insert!
   end
 end

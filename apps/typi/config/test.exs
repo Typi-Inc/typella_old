@@ -17,3 +17,6 @@ config :typi, Typi.Repo,
   database: "typi_test",
   hostname: "localhost",
   pool: Ecto.Adapters.SQL.Sandbox
+
+config :typi, :otp, Typi.OTP.InMemory
+config :typi, :twilio_api, Typi.ExTwilio.InMemory

@@ -28,3 +28,6 @@ config :typi, Typi.Repo,
   database: "typi_dev",
   hostname: "localhost",
   pool_size: 10
+
+config :typi, :otp, Typi.OTP
+config :typi, :twilio_api, ExTwilio

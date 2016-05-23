@@ -18,6 +18,8 @@ config :typi, Typi.Endpoint,
 
 # Do not print debug messages in production
 config :logger, level: :info
+config :typi, :otp, Typi.OTP
+config :typi, :twilio_api, ExTwilio
 
 # ## SSL Support
 #

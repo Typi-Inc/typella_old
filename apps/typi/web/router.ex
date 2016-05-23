@@ -7,5 +7,7 @@ defmodule Typi.Router do
 
   scope "/api", Typi do
     pipe_through :api
+
+    post "/register", RegistrationController, :register
   end
 end

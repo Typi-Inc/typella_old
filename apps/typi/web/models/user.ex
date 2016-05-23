@@ -16,6 +16,8 @@ defmodule Typi.User do
   def changeset(struct, params \\ %{}) do
     struct
     |> cast(params, [:name, :profile_pic])
+    |> cast_assoc(:devices)
+    |> cast_assoc(:phones)
     |> validate_required([])
   end
 end

@@ -24,7 +24,7 @@ defmodule Typi.ConnCase do
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
-
+      import Typi.TestHelpers
       import Typi.Router.Helpers
 
       # The default endpoint for testing

@@ -23,7 +23,8 @@ defmodule Typi.Mixfile do
   def application do
     [mod: {Typi, []},
      applications: [:phoenix, :phoenix_pubsub, :cowboy, :logger, :gettext,
-                    :phoenix_ecto, :postgrex, :comeonin, :ex_phone_number]]
+                    :phoenix_ecto, :postgrex, :comeonin, :ex_phone_number,
+                    :ex_twilio]]
   end
 
   # Specifies which paths to compile per environment.
@@ -41,7 +42,9 @@ defmodule Typi.Mixfile do
      {:gettext, "~> 0.11"},
      {:cowboy, "~> 1.0"},
      {:comeonin, "~> 2.3"},
-     {:ex_phone_number, git: "https://github.com/socialpaymentsbv/ex_phone_number", branch: "develop"}]
+     {:ex_phone_number, git: "https://github.com/socialpaymentsbv/ex_phone_number", branch: "develop"},
+     {:ex_twilio, "~> 0.1.7"},
+     {:mock, "~> 0.1.1", only: :test}]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

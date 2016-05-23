@@ -33,6 +33,12 @@ defmodule Typi.DeviceTest do
     assert {:uuid, {"can't be blank", []}} in changeset.errors
   end
 
+  test "changeset is invalid if uuid is of not approproate format", %{user: user} do
+    changeset  = device_changeset(user, Map.put(@valid_attrs, :uuid, "123"))
+    refute changeset.valid?
+    assert {:uuid, {"has invalid format", []}} in changeset.errors
+  end
+
   test "changeset is invalid if uuid already exists", %{user: user} do
     insert_device(user, @valid_attrs)
 
