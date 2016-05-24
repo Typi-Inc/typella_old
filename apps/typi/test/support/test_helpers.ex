@@ -1,5 +1,5 @@
 defmodule Typi.TestHelpers do
-  alias Typi.{Repo, Device, Phone, User}
+  alias Typi.{Repo, Device, Phone, User, Registration}
 
   def insert_device(user, attrs \\ %{}) do
     user
@@ -27,6 +27,16 @@ defmodule Typi.TestHelpers do
 
   def insert_user(user \\ %User{}) do
     user
+    |> Repo.insert!
+  end
+
+  def insert_registration(attrs \\ %{}) do
+    attrs = Map.merge(%{
+      :otp => "1234"
+    }, attrs)
+
+    %Registration{}
+    |> Registration.changeset(attrs)
     |> Repo.insert!
   end
 end

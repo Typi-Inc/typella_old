@@ -15,7 +15,7 @@ defmodule Typi.Registration do
   # only used for input validation
   def changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:country_code, :number, :region, :uuid, :otp])
+    |> cast(params, [:country_code, :number, :region, :uuid, :otp, :inserted_at])
     |> validate_required([:country_code, :number, :region, :uuid, :otp])
     |> validate_length(:otp, min: 4, max: 4)
     |> Typi.Phone.validate_phone
@@ -38,6 +38,16 @@ defmodule Typi.Registration do
       devices: [struct(Typi.Device, registration_map)],
       phones: [struct(Typi.Phone, registration_map)]
     }
+  end
+
+  def to_device(registration) do
+    registration_map = to_map(registration)
+    struct(Typi.Device, registration_map)
+  end
+
+  def to_phone(registration) do
+    registration_map = to_map(registration)
+    struct(Typi.Phone, registration_map)    
   end
 
   def to_map(registration) do

@@ -9,5 +9,6 @@ defmodule Typi.Router do
     pipe_through :api
 
     post "/register", RegistrationController, :register
+    post "/verify", RegistrationController, :verify
   end
 end

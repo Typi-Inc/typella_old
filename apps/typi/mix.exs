@@ -24,7 +24,7 @@ defmodule Typi.Mixfile do
     [mod: {Typi, []},
      applications: [:phoenix, :phoenix_pubsub, :cowboy, :logger, :gettext,
                     :phoenix_ecto, :postgrex, :comeonin, :ex_phone_number,
-                    :ex_twilio]]
+                    :ex_twilio, :guardian]]
   end
 
   # Specifies which paths to compile per environment.
@@ -35,16 +35,19 @@ defmodule Typi.Mixfile do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
-    [{:phoenix, git: "https://github.com/phoenixframework/phoenix"},
-     {:phoenix_pubsub, git: "https://github.com/phoenixframework/phoenix_pubsub", override: true},
-     {:phoenix_ecto, git: "https://github.com/phoenixframework/phoenix_ecto", override: true},
-     {:postgrex, ">= 0.0.0"},
-     {:gettext, "~> 0.11"},
-     {:cowboy, "~> 1.0"},
-     {:comeonin, "~> 2.3"},
-     {:ex_phone_number, git: "https://github.com/socialpaymentsbv/ex_phone_number", branch: "develop"},
-     {:ex_twilio, "~> 0.1.7"},
-     {:mock, "~> 0.1.1", only: :test}]
+    [
+      {:phoenix, git: "https://github.com/phoenixframework/phoenix"},
+      {:phoenix_pubsub, git: "https://github.com/phoenixframework/phoenix_pubsub", override: true},
+      {:phoenix_ecto, git: "https://github.com/phoenixframework/phoenix_ecto", override: true},
+      {:postgrex, ">= 0.0.0"},
+      {:gettext, "~> 0.11"},
+      {:cowboy, "~> 1.0"},
+      {:comeonin, "~> 2.3"},
+      {:ex_phone_number, git: "https://github.com/socialpaymentsbv/ex_phone_number", branch: "develop"},
+      {:ex_twilio, "~> 0.1.7"},
+      {:guardian, "~> 0.11.1"},
+      {:mock, "~> 0.1.1", only: :test}
+    ]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
