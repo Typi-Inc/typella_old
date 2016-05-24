@@ -33,9 +33,16 @@ defmodule Typi.Registration do
   end
 
   def to_user(registration) do
+    registration_map = to_map(registration)
     %Typi.User{
-      devices: [struct(Typi.Device, Map.from_struct(registration))],
-      phones: [struct(Typi.Phone, Map.from_struct(registration))]
+      devices: [struct(Typi.Device, registration_map)],
+      phones: [struct(Typi.Phone, registration_map)]
     }
+  end
+
+  def to_map(registration) do
+    registration
+    |> Map.from_struct
+    |> Map.delete(:__meta__)
   end
 end

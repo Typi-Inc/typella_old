@@ -9,8 +9,8 @@ defmodule Typi.RegistrationTest do
     changeset = Registration.changeset(%Registration{}, @valid_attrs)
     registration = Ecto.Changeset.apply_changes(changeset)
     user = Registration.to_user(registration)
-    assert struct(Typi.Device, Map.from_struct(registration)) in user.devices
-    assert struct(Typi.Phone, Map.from_struct(registration)) in user.phones
+    assert struct(Typi.Device, Registration.to_map(registration)) in user.devices
+    assert struct(Typi.Phone, Registration.to_map(registration)) in user.phones
   end
 
   test "changeset is invalid if otp is not of appropriate length" do
