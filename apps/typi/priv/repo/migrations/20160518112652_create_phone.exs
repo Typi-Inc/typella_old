@@ -4,7 +4,6 @@ defmodule Typi.Repo.Migrations.CreatePhone do
   def change do
     create table(:phones) do
       add :country_code, :string, null: false
-      add :is_verified, :boolean, null: false
       add :number, :string, null: false
       add :region, :string, null: false
       add :user_id, references(:users, on_delete: :nothing), null: false
