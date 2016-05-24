@@ -47,7 +47,7 @@ defmodule Typi.Registration do
 
   def to_phone(registration) do
     registration_map = to_map(registration)
-    struct(Typi.Phone, registration_map)    
+    struct(Typi.Phone, registration_map)
   end
 
   def to_map(registration) do
