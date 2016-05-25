@@ -22,7 +22,7 @@ defmodule Typi.RegistrationControllerTest do
     end
   end
 
-  test "/register sends error if country code is not of approproate format", %{conn: conn} do
+  test "/register sends error if country code is not of appropriate format", %{conn: conn} do
     conn = post conn, registration_path(conn, :register),
       registration: Map.put(@register_attrs, "country_code", "123123123")
     assert json_response(conn, 422) == %{"errors" => %{"number" => ["invalid phone number"]}}
@@ -64,7 +64,7 @@ defmodule Typi.RegistrationControllerTest do
   test "/verify receives registration_id and otp, checks with otp_hash and stores user in db", %{conn: conn} do
     insert_registration(@register_attrs)
     conn = post conn, registration_path(conn, :verify),
-      registration: @verify_attrs
+      verification: @verify_attrs
     assert json_response(conn, 201)["jwt"]
 
     assert Repo.get_by(Phone, Map.take(@register_attrs, [:country_code, :number, :region]))
@@ -77,8 +77,8 @@ defmodule Typi.RegistrationControllerTest do
   test "/verify responds with error if incorrect country_code/number is passed", %{conn: conn} do
     insert_registration(@register_attrs)
     conn = post conn, registration_path(conn, :verify),
-      registration: Map.put(@verify_attrs, "country_code", "+7")
-    assert json_response(conn, 422) == %{"errors" => %{"registration" => "not yet registered"}}
+      verification: Map.put(@verify_attrs, "country_code", "+7")
+    assert json_response(conn, 422) == %{"errors" => %{"verification" => "not yet registered"}}
 
     refute Repo.get_by(Phone, Map.take(@register_attrs, [:country_code, :number, :region]))
     refute Repo.get_by(Device, Map.take(@register_attrs, [:uuid]))
@@ -90,7 +90,7 @@ defmodule Typi.RegistrationControllerTest do
   test "/verify responds with error if incorrect otp is passed", %{conn: conn} do
     insert_registration(@register_attrs)
     conn = post conn, registration_path(conn, :verify),
-      registration: Map.put(@verify_attrs, "code", "2345")
+      verification: Map.put(@verify_attrs, "code", "2345")
     assert json_response(conn, 422) == %{"errors" => %{"code" => "not valid"}}
 
     refute Repo.get_by(Phone, Map.take(@register_attrs, [:country_code, :number, :region]))
@@ -104,7 +104,7 @@ defmodule Typi.RegistrationControllerTest do
     insert_registration(Map.put(@register_attrs, :inserted_at, %Ecto.DateTime{
       year: 2015, month: 4, day: 27, hour: 10, min: 8, sec: 42, usec: 0
     }))
-    conn = post conn, registration_path(conn, :verify), registration: @verify_attrs
+    conn = post conn, registration_path(conn, :verify), verification: @verify_attrs
     assert json_response(conn, 422) == %{"errors" => %{"code" => "already expired"}}
 
     refute Repo.get_by(Phone, Map.take(@register_attrs, [:country_code, :number, :region]))
@@ -120,7 +120,7 @@ defmodule Typi.RegistrationControllerTest do
       phones: [struct(Phone, @register_attrs)]
     })
     insert_registration(@register_attrs)
-    conn = post conn, registration_path(conn, :verify), registration: @verify_attrs
+    conn = post conn, registration_path(conn, :verify), verification: @verify_attrs
     assert json_response(conn, 201)["jwt"]
 
     assert [_device] = Repo.all from d in Device, where: d.uuid == ^@register_attrs.uuid
@@ -144,7 +144,7 @@ defmodule Typi.RegistrationControllerTest do
       phones: [struct(Phone, attrs)]
     })
     insert_registration(@register_attrs)
-    conn = post conn, registration_path(conn, :verify), registration: @verify_attrs
+    conn = post conn, registration_path(conn, :verify), verification: @verify_attrs
     assert json_response(conn, 201)["jwt"]
 
     assert [_device] = Repo.all from d in Device, where: d.uuid == ^@register_attrs.uuid
@@ -168,7 +168,7 @@ defmodule Typi.RegistrationControllerTest do
       phones: [struct(Phone, attrs)]
     })
     insert_registration(@register_attrs)
-    conn = post conn, registration_path(conn, :verify), registration: @verify_attrs
+    conn = post conn, registration_path(conn, :verify), verification: @verify_attrs
     assert json_response(conn, 201)["jwt"]
 
     assert [_device] = Repo.all from d in Device, where: d.uuid == ^@register_attrs.uuid
@@ -192,7 +192,7 @@ defmodule Typi.RegistrationControllerTest do
       phones: [struct(Phone, attrs)]
     })
     registration = insert_registration(@register_attrs)
-    conn = post conn, registration_path(conn, :verify), registration: @verify_attrs
+    conn = post conn, registration_path(conn, :verify), verification: @verify_attrs
     assert json_response(conn, 201)["jwt"]
 
     assert [_device] = Repo.all from d in Device, where: d.uuid == ^@register_attrs.uuid

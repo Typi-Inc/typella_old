@@ -31,7 +31,7 @@ config :guardian, Guardian,
   allowed_algos: ["Ed448"],
   issuer: "Typi",
   verify_issuer: true,
-  ttl: { 6, :months },
+  ttl: { 30, :days },
   secret_key: %{
     "alg" => "Ed448",
     "crv" => "Ed448",

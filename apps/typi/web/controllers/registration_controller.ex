@@ -9,6 +9,7 @@ defmodule Typi.RegistrationController do
   @twilio_phone_number Application.get_env(:ex_twilio, :phone_number)
 
   plug :scrub_params, "registration" when action in [:register]
+  plug :scrub_params, "verification" when action in [:verify]
 
   def register(conn, %{"registration" => registration_params}) do
     otp = @otp.generate_otp()
@@ -29,7 +30,7 @@ defmodule Typi.RegistrationController do
     end
   end
 
-  def verify(conn, %{"registration" => %{"country_code" => country_code, "number" => number, "code" => otp}}) do
+  def verify(conn, %{"verification" => %{"country_code" => country_code, "number" => number, "code" => otp}}) do
     with {:ok, registration} <- get_registration(country_code, number),
       {:ok, _registration} <- validate_otp(registration, otp),
       {:ok, user} <- update_or_insert_user(registration),
@@ -47,7 +48,7 @@ defmodule Typi.RegistrationController do
       {:error, reasons} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> json(reasons)
+        |> return_error(reasons)
     end
   end
 
@@ -59,9 +60,19 @@ defmodule Typi.RegistrationController do
     ])
   end
 
+  defp return_error(conn, reasons) do
+    if Map.has_key?(reasons, :__struct__) and reasons.__struct__ == Ecto.Changeset do
+      conn
+      |> render(Typi.ChangesetView, "error.json", changeset: reasons)
+    else
+      conn
+      |>json(reasons)
+    end
+  end
+
   defp get_registration(country_code, number) do
     case Repo.get_by(Registration, %{country_code: country_code, number: number}) do
-      nil -> {:error, %{"errors" => %{"registration" => "not yet registered"}}}
+      nil -> {:error, %{"errors" => %{"verification" => "not yet registered"}}}
       registration -> {:ok, registration}
     end
   end
@@ -94,7 +105,7 @@ defmodule Typi.RegistrationController do
       _ ->
         Logger.error "the following registration appears to have more then one " <>
           "corresponding user #{inspect registration}"
-        {:error, %{"errors" => %{"registration" => "server error please contact us"}}}
+        {:error, %{"errors" => %{"verification" => "server error please contact us"}}}
     end
   end
 
