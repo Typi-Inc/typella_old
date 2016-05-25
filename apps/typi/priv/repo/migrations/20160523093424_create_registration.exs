@@ -11,5 +11,7 @@ defmodule Typi.Repo.Migrations.CreateRegistration do
 
       timestamps
     end
+
+    create unique_index(:registrations, [:country_code, :number, :uuid])
   end
 end

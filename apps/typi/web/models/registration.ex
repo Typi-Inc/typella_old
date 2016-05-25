@@ -21,6 +21,7 @@ defmodule Typi.Registration do
     |> Typi.Phone.validate_phone
     |> Typi.Device.validate_uuid
     |> put_otp_hash
+    |> unique_constraint(:number, name: :registrations_country_code_number_uuid_index)
   end
 
   def put_otp_hash(changeset) do

@@ -14,12 +14,23 @@ defmodule Typi.RegistrationControllerTest do
   test "/register receives params and generates otp, hashes it and stores in db", %{conn: conn} do
     with_mock Typi.OTP.InMemory, [generate_otp: fn -> "1234" end] do
       conn = post conn, registration_path(conn, :register), registration: @register_attrs
-      assert json_response(conn, 201)
-      assert user = Repo.get_by(Registration, @register_attrs)
-      refute user.otp
+      assert json_response(conn, 200)
+      assert registration = Repo.get_by(Registration, @register_attrs)
+      refute registration.otp
       assert called Typi.OTP.InMemory.generate_otp
-      assert Comeonin.Bcrypt.checkpw("1234", user.otp_hash)
+      assert Comeonin.Bcrypt.checkpw("1234", registration.otp_hash)
     end
+  end
+
+  test "/register updates already existing registration if it already exists", %{conn: conn} do
+    insert_registration(Map.put(@register_attrs, :otp, "2345"))
+    conn = post conn, registration_path(conn, :register), registration: @register_attrs
+    assert json_response(conn, 200)
+    assert [registration] = Repo.all from r in Registration,
+      where: r.country_code == ^@register_attrs.country_code
+        and r.number == ^@register_attrs.number and r.uuid == ^@register_attrs.uuid
+    refute registration.otp
+    assert Comeonin.Bcrypt.checkpw("1234", registration.otp_hash)
   end
 
   test "/register sends error if country code is not of appropriate format", %{conn: conn} do
@@ -55,7 +66,7 @@ defmodule Typi.RegistrationControllerTest do
       assert body == "1234"
     end] do
       conn = post conn, registration_path(conn, :register), registration: @register_attrs
-      assert json_response(conn, 201)
+      assert json_response(conn, 200)
       # TODO find out what happens should be the same as first test
       # assert called Typi.ExTwilio.InMemory.Message.create
     end

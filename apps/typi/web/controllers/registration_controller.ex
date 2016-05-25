@@ -12,16 +12,16 @@ defmodule Typi.RegistrationController do
   plug :scrub_params, "verification" when action in [:verify]
 
   def register(conn, %{"registration" => registration_params}) do
-    otp = @otp.generate_otp()
-    changeset =
-      %Registration{}
-      |> Registration.changeset(Map.put(registration_params, "otp", otp))
-
-    case Repo.insert(changeset) do
+    otp = @otp.generate_otp
+    registration_params
+    |> Map.take([:country_code, :number, :uuid])
+    |> get_registration
+    |> update_or_insert_registration(registration_params, otp)
+    |> case do
       {:ok, _registration} ->
         send_otp(registration_params, otp)
         conn
-        |> put_status(:created)
+        |> put_status(:ok)
         |> json(%{})
       {:error, changeset} ->
         conn
@@ -50,6 +50,25 @@ defmodule Typi.RegistrationController do
         |> put_status(:unprocessable_entity)
         |> return_error(reasons)
     end
+  end
+
+  defp get_registration(attrs) do
+    Repo.get_by(Registration, attrs)
+  end
+
+  defp update_or_insert_registration(nil, params, otp) do
+    changeset =
+      %Registration{}
+      |> Registration.changeset(Map.put(params, "otp", otp))
+    Repo.insert(changeset)
+  end
+
+  defp update_or_insert_registration(registration, _params, otp) do
+    registration
+    |> Ecto.Changeset.change
+    |> Ecto.Changeset.put_change(:otp, otp)
+    |> Registration.put_otp_hash
+    |> Repo.update
   end
 
   defp send_otp(%{"country_code" => country_code, "number" => number}, otp) do
