@@ -184,4 +184,29 @@ defmodule Typi.RegistrationControllerTest do
     assert length(user.devices) == 2
     assert length(user.phones) == 1
   end
+
+  test "/verify deletes registration if user was successfully created", %{conn: conn} do
+    attrs = Map.merge(@register_attrs, %{uuid: "132F9C00-92DC-4B5C-9464-7971F01F8370"})
+    insert_user(%User{
+      devices: [struct(Device, attrs)],
+      phones: [struct(Phone, attrs)]
+    })
+    registration = insert_registration(@register_attrs)
+    conn = post conn, registration_path(conn, :verify), registration: @verify_attrs
+    assert json_response(conn, 201)["jwt"]
+
+    assert [_device] = Repo.all from d in Device, where: d.uuid == ^@register_attrs.uuid
+    assert [_phone] = Repo.all from p in Phone,
+      where: p.country_code == ^@register_attrs.country_code and p.number == ^@register_attrs.number
+
+    assert [user] = Repo.all from u in User,
+      join: d in assoc(u, :devices),
+      join: p in assoc(u, :phones),
+      where: d.uuid == ^@register_attrs.uuid or
+        (p.country_code == ^@register_attrs.country_code and p.number == ^@register_attrs.number),
+      preload: [devices: d, phones: p]
+    assert length(user.devices) == 2
+    assert length(user.phones) == 1
+    refute Repo.get(Registration, registration.id)
+  end
 end

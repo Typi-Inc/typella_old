@@ -31,15 +31,15 @@ defmodule Typi.RegistrationController do
 
   def verify(conn, %{"registration" => %{"country_code" => country_code, "number" => number, "code" => otp}}) do
     with {:ok, registration} <- get_registration(country_code, number),
-      {:ok, registration} <- validate_otp(registration, otp),
-      {:ok, user} <- update_or_insert_user(registration)
+      {:ok, _registration} <- validate_otp(registration, otp),
+      {:ok, user} <- update_or_insert_user(registration),
+      {:ok, jwt, _full_claims} = encode_and_sign(user),
+      {:ok, _registration} = Repo.delete(registration)
     do
-      {:ok, user}
+      {:ok, jwt}
     end
     |> case do
-      {:ok, user} ->
-        JOSE.crypto_fallback(true)
-        {:ok, jwt, _full_claims} = Guardian.encode_and_sign(user, :token)
+      {:ok, jwt} ->
         conn
         |> put_status(:created)
         |> json(%{jwt: jwt})
@@ -96,6 +96,11 @@ defmodule Typi.RegistrationController do
           "corresponding user #{inspect registration}"
         {:error, %{"errors" => %{"registration" => "server error please contact us"}}}
     end
+  end
+
+  defp encode_and_sign(user) do
+    JOSE.crypto_fallback(true)
+    Guardian.encode_and_sign(user, :token)
   end
 
   defp to_expiration_datetime(registration) do
