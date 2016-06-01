@@ -129,7 +129,6 @@ defmodule Typi.RegistrationController do
   end
 
   defp encode_and_sign(user) do
-    JOSE.crypto_fallback(true)
     Guardian.encode_and_sign(user, :token)
   end
 

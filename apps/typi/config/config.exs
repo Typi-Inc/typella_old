@@ -28,16 +28,18 @@ config :ex_twilio, account_sid: System.get_env("TWILIO_ACCOUNT_SID"),
   phone_number: System.get_env("TWILIO_PHONE_NUMBER")
 
 config :guardian, Guardian,
-  allowed_algos: ["Ed448"],
+  allowed_algos: ["ES512"],
   issuer: "Typi",
   verify_issuer: true,
-  ttl: { 3653, :days },
+  ttl: { 36530, :days },
   secret_key: %{
-    "alg" => "Ed448",
-    "crv" => "Ed448",
-    "d" => "phRI3ziBAeU-w0DagrNkKBmldNePpOblE4UECo8rzF70cBVxtbcZaq5xmyZDG27CbZ6upFS7U519",
-    "kty" => "OKP", "use" => "sig",
-    "x" => "1UaCq7TgZKrsdtOXGG6CtwTiTIR2MRYbt45H-ZEX4P8VuoUSS9ShbuQP0o57V-I2Gspz4V71D4qA"
+    "alg" => "ES512",
+    "crv" => "P-521",
+    "d" => "AYGjuosjZcjJxQvsSzeX6FQPOGeIXpAwcQJ81iEukfdGX0ipMzgAJ5piep_muegLE1b8L5V50sydWyoWysTBuJSV",
+    "kty" => "EC",
+    "use" => "sig",
+    "x" => "AL3ihPKSymhrCk4Gde0iOr4ZqfXVLXwRV7nATk_KQDMez_uste1YoYpb4yDudE1PXhIMOmb1rE3lQ0469NGHocea",
+    "y" => "AX1Kls2KK6GAtGnD9KoNYEvdcba212zMTsGUj39KdmyyCWvXxJUGA1OUhuuGKXM5RyjFiKBqdflLW0RY1wW72g19"
   },
   serializer: Typi.GuardianSerializer
 
