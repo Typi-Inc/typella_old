@@ -85,7 +85,7 @@ defmodule Typi.RegistrationController do
       |> render(Typi.ChangesetView, "error.json", changeset: reasons)
     else
       conn
-      |>json(reasons)
+      |> json(reasons)
     end
   end
 
