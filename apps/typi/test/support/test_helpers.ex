@@ -1,5 +1,5 @@
 defmodule Typi.TestHelpers do
-  alias Typi.{Repo, Device, Phone, User, Registration}
+  alias Typi.{Repo, Device, Phone, User, Registration, Chat}
 
   def insert_device(user, attrs \\ %{}) do
     user
@@ -37,6 +37,11 @@ defmodule Typi.TestHelpers do
 
     %Registration{}
     |> Registration.changeset(attrs)
+    |> Repo.insert!
+  end
+
+  def insert_chat(chat \\ %Chat{}) do
+    chat
     |> Repo.insert!
   end
 end

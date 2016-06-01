@@ -1,11 +1,9 @@
 defmodule Typi.Channels.UserSocketTest do
   use Typi.ChannelCase, async: true
-  import Typi.TestHelpers
-  alias Typi.{UserSocket, User}
+  alias Typi.UserSocket
 
   test "socket authentication with valid token" do
     user = insert_user
-    JOSE.crypto_fallback(true)
     {:ok, token, _full_claims} = Guardian.encode_and_sign(user, :token)
     assert {:ok, socket} = connect(UserSocket, %{"token" => token})
     assert socket.assigns.current_user.id == user.id

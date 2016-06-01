@@ -24,7 +24,7 @@ defmodule Typi.ChannelCase do
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
-
+      import Typi.TestHelpers
 
       # The default endpoint for testing
       @endpoint Typi.Endpoint

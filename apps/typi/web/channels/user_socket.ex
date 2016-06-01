@@ -2,7 +2,7 @@ defmodule Typi.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  # channel "rooms:*", Typi.RoomChannel
+  channel "chats:*", Typi.ChatChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket

@@ -1,15 +1,12 @@
-defmodule Typi.User do
+defmodule Typi.Chat do
   use Typi.Web, :model
 
-  schema "users" do
-    field :name, :string
-    field :profile_pic, :string
-    has_many :phones, Typi.Phone
-    has_many :devices, Typi.Device
+  schema "chats" do
     has_many :messages, Typi.Message
-    many_to_many :chats, Typi.Chat,
+    many_to_many :users, Typi.User,
       join_through: Typi.ChatUser,
       on_replace: :delete
+
     timestamps
   end
 
@@ -18,9 +15,7 @@ defmodule Typi.User do
   """
   def changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:name, :profile_pic])
-    |> cast_assoc(:devices)
-    |> cast_assoc(:phones)
+    |> cast(params, [])
     |> validate_required([])
   end
 end
