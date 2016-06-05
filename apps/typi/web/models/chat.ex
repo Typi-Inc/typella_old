@@ -2,7 +2,6 @@ defmodule Typi.Chat do
   use Typi.Web, :model
 
   schema "chats" do
-    has_many :messages, Typi.Message
     many_to_many :users, Typi.User,
       join_through: Typi.ChatUser,
       on_replace: :delete

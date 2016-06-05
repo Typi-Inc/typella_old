@@ -6,7 +6,6 @@ defmodule Typi.User do
     field :profile_pic, :string
     has_many :phones, Typi.Phone
     has_many :devices, Typi.Device
-    has_many :messages, Typi.Message
     many_to_many :chats, Typi.Chat,
       join_through: Typi.ChatUser,
       on_replace: :delete
