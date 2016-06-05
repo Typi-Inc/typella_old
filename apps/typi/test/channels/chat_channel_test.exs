@@ -1,6 +1,7 @@
 defmodule Typi.ChatChannelTest do
-  # TODO async: true does not work
   use Typi.ChannelCase
+  use Amnesia
+  use Database
 
   setup do
     user = insert_user
@@ -12,8 +13,8 @@ defmodule Typi.ChatChannelTest do
     {:ok, socket: socket, user: user, chat: chat}
   end
 
-  test "join replies with messages, where status is delivery", %{socket: socket, user: user, chat: chat} do
-  end
+  # test "join replies with messages, where status is delivery", %{socket: socket, user: user, chat: chat} do
+  # end
 
   test "can only join authorized chats", %{socket: socket, user: user, chat: chat} do
     assert {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
@@ -28,9 +29,17 @@ defmodule Typi.ChatChannelTest do
 
   test "server receives message, stores it and replies with `received` status", %{socket: socket, user: user, chat: chat} do
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
-    ref = push socket, "message", %{body: "the body", client_id: 1, created_at: "2015-04-27 10:08:42"}
+    ref = push socket, "message", %{body: "the body", client_id: 1, created_at: :os.system_time(:seconds)}
     assert_reply ref, :ok, %{client_id: 1, status: "received"}
-    assert Repo.get_by(Typi.Message, %{client_id: 1, body: "the body", status: "received"})
+
+    [message] = Amnesia.transaction do
+      selection = Message.where chat_id == chat.id, select: [body, client_id, chat_id, created_at, status, user_id]
+      selection
+      |> Amnesia.Selection.values
+    end
+    chat_id = chat.id
+    user_id = user.id
+    assert ["the body", 1, ^chat_id, _, "received", ^user_id] = message
   end
 
   test "after receiving message server checks the presence of " do

@@ -24,7 +24,7 @@ defmodule Typi.Mixfile do
     [mod: {Typi, []},
      applications: [:phoenix, :phoenix_pubsub, :cowboy, :logger, :gettext,
                     :phoenix_ecto, :postgrex, :comeonin, :ex_phone_number,
-                    :ex_twilio, :guardian]]
+                    :ex_twilio, :guardian, :amnesia]]
   end
 
   # Specifies which paths to compile per environment.
@@ -46,6 +46,7 @@ defmodule Typi.Mixfile do
       {:ex_phone_number, git: "https://github.com/socialpaymentsbv/ex_phone_number", branch: "develop"},
       {:ex_twilio, "~> 0.1.7"},
       {:guardian, "~> 0.11.1"},
+      {:amnesia, "~> 0.2.4"},
       {:mock, "~> 0.1.1", only: :test}
     ]
   end

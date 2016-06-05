@@ -1,6 +1,7 @@
 defmodule Typi.ChatChannel do
   use Typi.Web, :channel
-  alias Typi.Message
+  use Amnesia
+  use Database
 
   def join("chats:" <> chat_id, _payload, socket) do
     if authorized?(chat_id, socket.assigns.current_user) do
@@ -16,22 +17,21 @@ defmodule Typi.ChatChannel do
   end
 
   def handle_in("message", %{"client_id" => client_id} = payload, socket) do
-    changeset = Message.changeset(%Message{}, payload)
+    changeset = Typi.Message.changeset(%Typi.Message{}, payload)
     if changeset.valid? do
-      changeset
-      |> Ecto.Changeset.apply_changes
-      |> Map.merge(%{
-        sender: socket.assigns.current_user,
-        chat: socket.assigns.current_chat,
-        status: "received"
-      })
-      |> Repo.insert
-      |> case do
-        {:ok, message} ->
-          {:reply, {:ok, %{client_id: client_id, status: message.status}}, socket}
-        {:error, changeset} ->
-          {:reply, {:error, %{errors: changeset}}, socket}
+      message =
+        changeset
+        |> Ecto.Changeset.apply_changes
+        |> Typi.Message.to_amnesia_message
+        |> Map.merge(%{
+          chat_id: socket.assigns.current_chat.id,
+          user_id: socket.assigns.current_user.id,
+          status: "received"
+        })
+      Amnesia.transaction do
+        message |> Message.write
       end
+      {:reply, {:ok, %{client_id: client_id, status: message.status}}, socket}
     else
       {:reply, {:error, %{errors: changeset}}, socket}
     end
