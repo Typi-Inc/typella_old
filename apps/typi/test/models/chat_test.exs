@@ -1,7 +1,7 @@
 defmodule Typi.ChatTest do
   use Typi.ModelCase
 
-  alias Typi.Chat
+  # alias Typi.Chat
 
   @valid_attrs %{}
   @invalid_attrs %{}

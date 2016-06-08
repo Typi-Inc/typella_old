@@ -10,7 +10,7 @@ defdatabase Database do
     :publish_at,
     :status,
     :user_id
-  ], type: :bag, index: [:chat_id] do
+  ], type: :set, index: [:chat_id] do
 		#Nice to have, we declare a struct that represents a record in the database
     @type t :: %Message{
       id: non_neg_integer,
@@ -21,6 +21,20 @@ defdatabase Database do
       publish_at: non_neg_integer,
       status: String.t,
       user_id: non_neg_integer
+    }
+  end
+
+  deftable Status, [
+    {:id, autoincrement },
+    :message_id,
+    :recipient_id,
+    :status
+  ], type: :set, index: [:message_id] do
+    @type t :: %Status{
+      id: non_neg_integer,
+      message_id: non_neg_integer,
+      recipient_id: non_neg_integer,
+      status: String.t
     }
   end
 end

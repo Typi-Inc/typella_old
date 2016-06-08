@@ -1,7 +1,7 @@
 defmodule Typi.ChatUserTest do
   use Typi.ModelCase
 
-  alias Typi.ChatUser
+  # alias Typi.ChatUser
 
   @valid_attrs %{is_admin: true}
   @invalid_attrs %{}
