@@ -69,6 +69,7 @@ defmodule Typi.ChatChannelTest do
   test "When message is received by a recipient, recipient sends the status `received`, and if all statuses are `received`, it changes the status of the message and pushes it to owner", %{socket: socket, users: [john, mike, sam], chat: chat} do
     #  send message to chat channel from john
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
+    {:ok, _, user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
     _ref = push socket, "message", @message_attrs
     :timer.sleep(100)
     message = Amnesia.transaction do
@@ -82,7 +83,7 @@ defmodule Typi.ChatChannelTest do
     statuses = Amnesia.transaction do
       Status.read_at(message.id, :message_id)
     end
-    # |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
+    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
     mike_id = mike.id
     sam_id = sam.id
     # assert length(statuses) == 2
@@ -97,6 +98,7 @@ defmodule Typi.ChatChannelTest do
     statuses = Amnesia.transaction do
       Status.read_at(message.id, :message_id)
     end
+    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
     mike_id = mike.id
     sam_id = sam.id
     assert [%Status{recipient_id: ^mike_id, status: "received"}, %Status{recipient_id: ^sam_id, status: "received"}] = statuses
@@ -106,13 +108,13 @@ defmodule Typi.ChatChannelTest do
     end
     assert %Message{status: "received"} = message
     message_id = message.id
-    assert_broadcast "status", %{id: ^message_id, status: received}
+    assert_push "message:status", %{id: ^message_id, status: received}
 
     cleanup
   end
 
   test "when message is read, recipient sends the status `read`, which is pushed at sender and the server deletes message" do
-
+    
   end
 
   defp cleanup() do

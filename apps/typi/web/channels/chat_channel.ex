@@ -58,8 +58,7 @@ defmodule Typi.ChatChannel do
         |> Map.put(:status, "received")
         |> Message.write
       end
-      # TODO Need to change it to a push to owner of the mesage
-      broadcast socket, "status", Map.take(message, [:id, :status])
+      Typi.Endpoint.broadcast "users:#{message.user_id}", "message:status", Map.take(message, [:id, :status])
     end
     {:noreply, socket}
   end
