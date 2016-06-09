@@ -1,6 +1,6 @@
 use Amnesia
 
-defdatabase Database do
+defdatabase Typi.Database do
   deftable Message, [
     {:id, autoincrement },
     :body,

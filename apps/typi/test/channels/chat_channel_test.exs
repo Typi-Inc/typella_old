@@ -1,11 +1,26 @@
 defmodule Typi.ChatChannelTest do
   use Typi.ChannelCase
   use Amnesia
-  use Database
+  use Typi.Database
 
   @message_attrs  %{body: "the body", client_id: 1, created_at: :os.system_time(:seconds)}
 
+  setup_all do
+    Amnesia.Schema.create
+    Amnesia.start
+
+    on_exit fn ->
+      Amnesia.stop
+      Amnesia.Schema.destroy
+    end
+    :ok
+  end
+
   setup do
+    Typi.Database.create!
+    on_exit fn ->
+      Typi.Database.destroy
+    end
     john = insert_user
     mike = insert_user
     sam = insert_user
@@ -53,8 +68,6 @@ defmodule Typi.ChatChannelTest do
     |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
     assert length(statuses) == 2
     assert [%Status{recipient_id: ^mike_id, status: "sending"}, %Status{recipient_id: ^sam_id, status: "sending"}] = statuses
-
-    cleanup
   end
 
   test "after message is received server checks the presence of recipients, if all recipients are in the same chat then broadcasts to recipients", %{socket: socket, users: [john, _mike, _sam], chat: chat} do
@@ -62,8 +75,6 @@ defmodule Typi.ChatChannelTest do
     _ref = push socket, "message", @message_attrs
     john_id = john.id
     assert_broadcast "message", %{id: _, body: "the body", created_at: _, user_id: ^john_id, status: "sending"}
-
-    cleanup
   end
 
   test "When message is received by a recipient, recipient sends the status `received`, and if all statuses are `received`, it changes the status of the message and pushes it to owner", %{socket: socket, users: [john, mike, sam], chat: chat} do
@@ -113,8 +124,6 @@ defmodule Typi.ChatChannelTest do
     # assert push to user channel
     message_id = message.id
     assert_push "message:status", %{id: ^message_id, status: "received"}
-
-    cleanup
   end
 
   test "when message is read, recipient sends the status `read`, which is pushed at sender and the server deletes message", %{socket: socket, users: [john, mike, sam], chat: chat} do
@@ -164,22 +173,6 @@ defmodule Typi.ChatChannelTest do
     # assert push to user channel
     message_id = message.id
     assert_push "message:status", %{id: ^message_id, status: "read"}
-
-    cleanup
-  end
-
-  defp cleanup() do
-    :timer.sleep(50)
-    Amnesia.transaction do
-      message = Message.last
-      statuses = Status.read_at(message.id, :message_id)
-      unless is_nil(statuses) do
-        for status <- statuses do
-          status |> Status.delete
-        end
-      end
-      message |> Message.delete
-    end
   end
 
   # test "ping replies with status ok", %{socket: socket} do

@@ -1,6 +1,6 @@
 defmodule Typi.Message do
   use Typi.Web, :model
-  use Database
+  use Typi.Database
 
   embedded_schema do
     field :body, :string

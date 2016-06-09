@@ -1,7 +1,7 @@
 defmodule Typi.ChatChannel do
   use Typi.Web, :channel
   use Amnesia
-  use Database
+  use Typi.Database
 
   def join("chats:" <> chat_id, _payload, socket) do
     if authorized?(chat_id, socket.assigns.current_user) do
