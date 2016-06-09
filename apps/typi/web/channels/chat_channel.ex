@@ -37,34 +37,18 @@ defmodule Typi.ChatChannel do
     end
   end
 
-  def handle_in("status", %{"id" => m_id, "status" => "received"}, socket) do
+  def handle_in("status", %{"id" => message_id, "status" => "received"}, socket) do
     # update status
-    statuses = Amnesia.transaction do
-      selection = Status.where message_id == m_id and recipient_id == socket.assigns.current_user.id, select: [id]
-      [[status_id]] = selection |> Amnesia.Selection.values
-
-      status_id
-      |> Status.read
-      |> Map.put(:status, "received")
-      |> Status.write
-
-      Status.read_at(m_id, :message_id)
-    end
-
-    # check if all statuses are != sending
-    if change_message_status?(statuses, false) do
-      message = Amnesia.transaction do
-        Message.read(m_id)
-        |> Map.put(:status, "received")
-        |> Message.write
-      end
-      Typi.Endpoint.broadcast "users:#{message.user_id}", "message:status", Map.take(message, [:id, :status])
-    end
+    statuses = update_status_and_get_statuses(message_id, "received", socket)
+    broadcast_if_status_changed(statuses, message_id, "received")
     {:noreply, socket}
   end
 
   def handle_in("status", %{"id" => message_id, "status" => "read"}, socket) do
-
+    # update status
+    statuses = update_status_and_get_statuses(message_id, "read", socket)
+    broadcast_if_status_changed(statuses, message_id, "read")
+    {:noreply, socket}
   end
 
   # Channels can be used in a request/response fashion
@@ -78,6 +62,31 @@ defmodule Typi.ChatChannel do
   def handle_in("shout", payload, socket) do
     broadcast socket, "shout", payload
     {:noreply, socket}
+  end
+
+  defp broadcast_if_status_changed(statuses, message_id, status) do
+    if change_message_status?(statuses, false) do
+      message = Amnesia.transaction do
+        Message.read(message_id)
+        |> Map.put(:status, status)
+        |> Message.write
+      end
+      Typi.Endpoint.broadcast "users:#{message.user_id}", "message:status", Map.take(message, [:id, :status])
+    end
+  end
+
+  defp update_status_and_get_statuses(m_id, status, socket) do
+    Amnesia.transaction do
+      selection = Status.where message_id == m_id and recipient_id == socket.assigns.current_user.id, select: [id]
+      [[status_id]] = selection |> Amnesia.Selection.values
+
+      status_id
+      |> Status.read
+      |> Map.put(:status, status)
+      |> Status.write
+
+      Status.read_at(m_id, :message_id)
+    end
   end
 
   defp change_message_status?([], accumulator) do

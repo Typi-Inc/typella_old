@@ -69,12 +69,13 @@ defmodule Typi.ChatChannelTest do
   test "When message is received by a recipient, recipient sends the status `received`, and if all statuses are `received`, it changes the status of the message and pushes it to owner", %{socket: socket, users: [john, mike, sam], chat: chat} do
     #  send message to chat channel from john
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
-    {:ok, _, user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
+    {:ok, _, _user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
     _ref = push socket, "message", @message_attrs
-    :timer.sleep(100)
+    :timer.sleep(50)
     message = Amnesia.transaction do
       Message.last
     end
+    # send `received` status from mike
     {:ok, token, _full_claims} = Guardian.encode_and_sign(mike, :token)
     {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
@@ -89,6 +90,7 @@ defmodule Typi.ChatChannelTest do
     # assert length(statuses) == 2
     assert [%Status{recipient_id: ^mike_id, status: "received"}, %Status{recipient_id: ^sam_id, status: "sending"}] = statuses
 
+    # send `received` status from sam
     {:ok, token, _full_claims} = Guardian.encode_and_sign(sam, :token)
     {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
@@ -107,14 +109,63 @@ defmodule Typi.ChatChannelTest do
       Message.read(message.id)
     end
     assert %Message{status: "received"} = message
+
+    # assert push to user channel
     message_id = message.id
-    assert_push "message:status", %{id: ^message_id, status: received}
+    assert_push "message:status", %{id: ^message_id, status: "received"}
 
     cleanup
   end
 
-  test "when message is read, recipient sends the status `read`, which is pushed at sender and the server deletes message" do
-    
+  test "when message is read, recipient sends the status `read`, which is pushed at sender and the server deletes message", %{socket: socket, users: [john, mike, sam], chat: chat} do
+    #  send message to chat channel from john
+    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
+    {:ok, _, _user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
+    _ref = push socket, "message", @message_attrs
+    :timer.sleep(50)
+    message = Amnesia.transaction do
+      Message.last
+    end
+    # send `read` status from mike
+    {:ok, token, _full_claims} = Guardian.encode_and_sign(mike, :token)
+    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
+    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
+    _ref = push socket, "status", %{"id" => message.id, "status" => "read"}
+    :timer.sleep(50)
+    statuses = Amnesia.transaction do
+      Status.read_at(message.id, :message_id)
+    end
+    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
+    mike_id = mike.id
+    sam_id = sam.id
+    # assert length(statuses) == 2
+    assert [%Status{recipient_id: ^mike_id, status: "read"}, %Status{recipient_id: ^sam_id, status: "sending"}] = statuses
+
+    # send `received` status from sam
+    {:ok, token, _full_claims} = Guardian.encode_and_sign(sam, :token)
+    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
+    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
+    _ref = push socket, "status", %{id: message.id, status: "read"}
+
+    :timer.sleep(50)
+    statuses = Amnesia.transaction do
+      Status.read_at(message.id, :message_id)
+    end
+    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
+    mike_id = mike.id
+    sam_id = sam.id
+    assert [%Status{recipient_id: ^mike_id, status: "read"}, %Status{recipient_id: ^sam_id, status: "read"}] = statuses
+    :timer.sleep(50)
+    message = Amnesia.transaction do
+      Message.read(message.id)
+    end
+    assert %Message{status: "read"} = message
+
+    # assert push to user channel
+    message_id = message.id
+    assert_push "message:status", %{id: ^message_id, status: "read"}
+
+    cleanup
   end
 
   defp cleanup() do
