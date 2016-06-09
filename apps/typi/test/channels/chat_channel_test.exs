@@ -70,7 +70,7 @@ defmodule Typi.ChatChannelTest do
     assert [%Status{recipient_id: ^mike_id, status: "sending"}, %Status{recipient_id: ^sam_id, status: "sending"}] = statuses
   end
 
-  test "after message is received server checks the presence of recipients, if all recipients are in the same chat then broadcasts to recipients", %{socket: socket, users: [john, _mike, _sam], chat: chat} do
+  test "after message is received by the server and assuming all recipients in the chat are in the same chat then broadcasts to recipients", %{socket: socket, users: [john, _mike, _sam], chat: chat} do
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
     _ref = push socket, "message", @message_attrs
     john_id = john.id
@@ -174,20 +174,4 @@ defmodule Typi.ChatChannelTest do
     message_id = message.id
     assert_push "message:status", %{id: ^message_id, status: "read"}
   end
-
-  # test "ping replies with status ok", %{socket: socket} do
-  #   IO.inspect socket
-  #   ref = push socket, "ping", %{"hello" => "there"}
-  #   assert_reply ref, :ok, %{"hello" => "there"}
-  # end
-  #
-  # test "shout broadcasts to chat:lobby", %{socket: socket} do
-  #   push socket, "shout", %{"hello" => "all"}
-  #   assert_broadcast "shout", %{"hello" => "all"}
-  # end
-  #
-  # test "broadcasts are pushed to the client", %{socket: socket} do
-  #   broadcast_from! socket, "broadcast", %{"some" => "data"}
-  #   assert_push "broadcast", %{"some" => "data"}
-  # end
 end

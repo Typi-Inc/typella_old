@@ -1,12 +1,19 @@
 defmodule Typi.UserChannel do
   use Typi.Web, :channel
+  alias Typi.Presence
 
-  def join("users:" <> user_id, payload, socket) do
-    if authorized?(payload) do
+  def join("users:" <> user_id, _payload, socket) do
+    if authorized?(user_id, socket) do
+      send self(), :after_join
       {:ok, socket}
     else
       {:error, %{reason: "unauthorized"}}
     end
+  end
+
+  def handle_info(:after_join, socket) do
+    Presence.track(socket, socket.assigns.current_user.id, %{})
+    {:noreply, socket}
   end
 
   def handle_out("message:status", payload, socket) do
@@ -14,21 +21,8 @@ defmodule Typi.UserChannel do
     {:noreply, socket}
   end
 
-  # Channels can be used in a request/response fashion
-  # by sending replies to requests from the client
-  def handle_in("ping", payload, socket) do
-    {:reply, {:ok, payload}, socket}
-  end
-
-  # It is also common to receive messages from the client and
-  # broadcast to everyone in the current topic (user:lobby).
-  def handle_in("shout", payload, socket) do
-    broadcast socket, "shout", payload
-    {:noreply, socket}
-  end
-
   # Add authorization logic here as required.
-  defp authorized?(_payload) do
-    true
+  defp authorized?(user_id, socket) do
+    String.to_integer(user_id) == socket.assigns.current_user.id
   end
 end

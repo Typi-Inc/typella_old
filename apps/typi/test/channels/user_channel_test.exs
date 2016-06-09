@@ -1,16 +1,14 @@
 defmodule Typi.UserChannelTest do
   use Typi.ChannelCase
 
-  alias Typi.UserChannel
-
   setup do
-    {:ok, _, socket} =
-      socket("user_id", %{some: :assign})
-      |> subscribe_and_join(UserChannel, "user:lobby")
-
-    {:ok, socket: socket}
+    user = insert_user
+    {:ok, token, _full_claims} = Guardian.encode_and_sign(user, :token)
+    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
+    {:ok, _, socket} = subscribe_and_join(socket, "users:#{user.id}", %{})
+    {:ok, socket: socket, user: user}
   end
-
+  
   # test "ping replies with status ok", %{socket: socket} do
   #   ref = push socket, "ping", %{"hello" => "there"}
   #   assert_reply ref, :ok, %{"hello" => "there"}
