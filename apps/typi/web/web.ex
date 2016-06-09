@@ -63,6 +63,7 @@ defmodule Typi.Web do
       use Phoenix.Channel
 
       alias Typi.Repo
+      alias Typi.Presence
       import Ecto
       import Ecto.Query
       import Typi.Gettext

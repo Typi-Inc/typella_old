@@ -21,6 +21,7 @@ defmodule Typi.ChannelCase do
       use Phoenix.ChannelTest
 
       alias Typi.Repo
+      alias Typi.Presence
       import Ecto
       import Ecto.Changeset
       import Ecto.Query

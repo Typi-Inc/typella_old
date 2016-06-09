@@ -24,12 +24,13 @@ defmodule Typi.ChatChannelTest do
     john = insert_user
     mike = insert_user
     sam = insert_user
+    sara = insert_user
     chat = insert_chat(%Typi.Chat{
-      users: [john, mike, sam]
+      users: [john, mike, sam, sara]
     })
     {:ok, token, _full_claims} = Guardian.encode_and_sign(john, :token)
     {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
-    {:ok, socket: socket, users: [john, mike, sam], chat: chat}
+    {:ok, socket: socket, users: [john, mike, sam, sara], chat: chat}
   end
 
   # test "join replies with messages, where status is delivery", %{socket: socket, user: user, chat: chat} do
@@ -46,132 +47,145 @@ defmodule Typi.ChatChannelTest do
     assert socket.assigns.current_chat.id == chat.id
   end
 
-  test "server receives message, stores it, creates status entries and replies with `sending` status", %{socket: socket, users: [john, mike, sam], chat: chat} do
+  test "server receives message, stores it, creates status entries and replies with `sending` status", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
     ref = push socket, "message", @message_attrs
     assert_reply ref, :ok, %{id: _, client_id: 1, status: "sending"}
 
-    :timer.sleep(50)
-    [message] = Amnesia.transaction do
-      Message.read_at(chat.id, :chat_id)
-    end
+    message = get_message()
     chat_id = chat.id
     john_id = john.id
     assert %Message{body: "the body", client_id: 1, chat_id: ^chat_id, status: "sending", user_id: ^john_id} = message
 
     mike_id = mike.id
     sam_id = sam.id
-    :timer.sleep(50)
-    statuses = Amnesia.transaction do
-      Status.read_at(message.id, :message_id)
-    end
-    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
-    assert length(statuses) == 2
-    assert [%Status{recipient_id: ^mike_id, status: "sending"}, %Status{recipient_id: ^sam_id, status: "sending"}] = statuses
+    statuses = get_message_statuses(message.id)
+    assert length(statuses) == 3
+    assert_statuses([{mike.id, "sending"}, {sam.id, "sending"}, {sara.id, "sending"}], statuses)
   end
 
-  test "after message is received by the server and assuming all recipients in the chat are in the same chat then broadcasts to recipients", %{socket: socket, users: [john, _mike, _sam], chat: chat} do
+  test "after message is received by the server, it broadcasts to all recipients currently in chat and sends push notification to others", %{socket: socket, users: [john, _mike, _sam, _sara], chat: chat} do
+    {:ok, _, socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
+    IO.inspect Presence.list(socket)
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
+    IO.inspect Presence.list(socket)
     _ref = push socket, "message", @message_attrs
     john_id = john.id
     assert_broadcast "message", %{id: _, body: "the body", created_at: _, user_id: ^john_id, status: "sending"}
   end
 
-  test "When message is received by a recipient, recipient sends the status `received`, and if all statuses are `received`, it changes the status of the message and pushes it to owner", %{socket: socket, users: [john, mike, sam], chat: chat} do
-    #  send message to chat channel from john
-    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
+  test "When message is received by a recipient, recipient sends the status `received`, and if all statuses are `received` or `read`, it changes the status of the message and pushes it to owner", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
+    # connect to users:... channel in order to see the status being pushed via `message:status`
     {:ok, _, _user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
-    _ref = push socket, "message", @message_attrs
-    :timer.sleep(50)
-    message = Amnesia.transaction do
-      Message.last
-    end
+
+    # send message to chat channel from john
+    socket = send_message(socket, chat, @message_attrs)
+
+    # get last message being stored
+    message = get_message()
+
     # send `received` status from mike
-    {:ok, token, _full_claims} = Guardian.encode_and_sign(mike, :token)
-    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
-    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
-    _ref = push socket, "status", %{"id" => message.id, "status" => "received"}
-    :timer.sleep(50)
-    statuses = Amnesia.transaction do
-      Status.read_at(message.id, :message_id)
-    end
-    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
-    mike_id = mike.id
-    sam_id = sam.id
-    # assert length(statuses) == 2
-    assert [%Status{recipient_id: ^mike_id, status: "received"}, %Status{recipient_id: ^sam_id, status: "sending"}] = statuses
+    send_message_status(mike, chat, message, "received")
+    statuses = get_message_statuses(message.id)
+    assert_statuses([{mike.id, "received"}, {sam.id, "sending"}, {sara.id, "sending"}], statuses)
 
     # send `received` status from sam
-    {:ok, token, _full_claims} = Guardian.encode_and_sign(sam, :token)
-    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
-    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
-    _ref = push socket, "status", %{id: message.id, status: "received"}
+    send_message_status(sam, chat, message, "read")
+    statuses = get_message_statuses(message.id)
+    assert_statuses([{mike.id, "received"}, {sam.id, "read"}, {sara.id, "sending"}], statuses)
 
-    :timer.sleep(50)
-    statuses = Amnesia.transaction do
-      Status.read_at(message.id, :message_id)
-    end
-    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
-    mike_id = mike.id
-    sam_id = sam.id
-    assert [%Status{recipient_id: ^mike_id, status: "received"}, %Status{recipient_id: ^sam_id, status: "received"}] = statuses
-    :timer.sleep(50)
-    message = Amnesia.transaction do
-      Message.read(message.id)
-    end
+    # send `received` status from sara
+    send_message_status(sara, chat, message, "received")
+    statuses = get_message_statuses(message.id)
+    assert_statuses([{mike.id, "received"}, {sam.id, "read"}, {sara.id, "received"}], statuses)
+
+    # chek that message's status has been changed
+    message = get_message(message.id)
     assert %Message{status: "received"} = message
 
-    # assert push to user channel
+    # assert that the owner of the message has been notified about status change
     message_id = message.id
     assert_push "message:status", %{id: ^message_id, status: "received"}
   end
 
-  test "when message is read, recipient sends the status `read`, which is pushed at sender and the server deletes message", %{socket: socket, users: [john, mike, sam], chat: chat} do
-    #  send message to chat channel from john
-    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
+  test "when message is read, recipient sends the status `read`, which is pushed at owner", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
+    # connect to users:... channel in order to see the status being pushed via `message:status`
     {:ok, _, _user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
-    _ref = push socket, "message", @message_attrs
-    :timer.sleep(50)
-    message = Amnesia.transaction do
-      Message.last
-    end
+
+    # send message to chat channel from john
+    socket = send_message(socket, chat, @message_attrs)
+
+    # get last message being stored
+    message = get_message()
+
     # send `read` status from mike
-    {:ok, token, _full_claims} = Guardian.encode_and_sign(mike, :token)
-    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
-    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
-    _ref = push socket, "status", %{"id" => message.id, "status" => "read"}
-    :timer.sleep(50)
-    statuses = Amnesia.transaction do
-      Status.read_at(message.id, :message_id)
-    end
-    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
-    mike_id = mike.id
-    sam_id = sam.id
-    # assert length(statuses) == 2
-    assert [%Status{recipient_id: ^mike_id, status: "read"}, %Status{recipient_id: ^sam_id, status: "sending"}] = statuses
+    send_message_status(mike, chat, message, "read")
+    statuses = get_message_statuses(message.id)
+    assert_statuses([{mike.id, "read"}, {sam.id, "sending"}, {sara.id, "sending"}], statuses)
 
-    # send `received` status from sam
-    {:ok, token, _full_claims} = Guardian.encode_and_sign(sam, :token)
-    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
-    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
-    _ref = push socket, "status", %{id: message.id, status: "read"}
+    # send `read` status from sam
+    send_message_status(sam, chat, message, "read")
+    statuses = get_message_statuses(message.id)
+    assert_statuses([{mike.id, "read"}, {sam.id, "read"}, {sara.id, "sending"}], statuses)
 
-    :timer.sleep(50)
-    statuses = Amnesia.transaction do
-      Status.read_at(message.id, :message_id)
-    end
-    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
-    mike_id = mike.id
-    sam_id = sam.id
-    assert [%Status{recipient_id: ^mike_id, status: "read"}, %Status{recipient_id: ^sam_id, status: "read"}] = statuses
-    :timer.sleep(50)
-    message = Amnesia.transaction do
-      Message.read(message.id)
-    end
+    # send `read` status from sara
+    send_message_status(sara, chat, message, "read")
+    statuses = get_message_statuses(message.id)
+    assert_statuses([{mike.id, "read"}, {sam.id, "read"}, {sara.id, "read"}], statuses)
+
+    # chek that message's status has been changed
+    message = get_message(message.id)
     assert %Message{status: "read"} = message
 
-    # assert push to user channel
+    # assert that the owner of the message has been notified about status change
     message_id = message.id
     assert_push "message:status", %{id: ^message_id, status: "read"}
+  end
+
+  defp assert_statuses(ids_statuses, statuses) do
+    statuses_to_assert =
+      ids_statuses
+      |> Enum.map(fn {id, status} -> %{recipient_id: id, status: status} end)
+
+    statuses_as_map =
+      statuses
+      |> Enum.map(fn status -> status |> Map.from_struct |> Map.take([:recipient_id, :status])   end)
+
+    assert ^statuses_to_assert = statuses_as_map
+  end
+
+  defp send_message(socket, chat, message_attrs) do
+    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
+    push socket, "message", message_attrs
+    socket
+  end
+
+  defp send_message_status(user, chat, message, status) do
+    # send `read` status from mike
+    {:ok, token, _full_claims} = Guardian.encode_and_sign(user, :token)
+    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
+    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
+    push socket, "status", %{"id" => message.id, "status" => status}
+  end
+
+  defp get_message(message_id \\ false) do
+    :timer.sleep(50)
+    if message_id do
+      Amnesia.transaction do
+        Message.read(message_id)
+      end
+    else
+      Amnesia.transaction do
+        Message.last
+      end
+    end
+  end
+
+  defp get_message_statuses(message_id) do
+    :timer.sleep(50)
+    Amnesia.transaction do
+      Status.read_at(message_id, :message_id)
+    end
+    |> Enum.sort(fn s1, s2 -> s1.recipient_id < s2.recipient_id end)
   end
 end

@@ -1,6 +1,5 @@
 defmodule Typi.UserChannel do
   use Typi.Web, :channel
-  alias Typi.Presence
 
   def join("users:" <> user_id, _payload, socket) do
     if authorized?(user_id, socket) do

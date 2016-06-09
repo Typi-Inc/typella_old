@@ -9,11 +9,19 @@ defmodule Typi.ChatChannel do
         nil ->
           {:error, %{reason: "unauthorized"}}
         chat ->
+          send self(), :after_join
           {:ok, assign(socket, :current_chat, chat)}
       end
     else
       {:error, %{reason: "unauthorized"}}
     end
+  end
+
+  def handle_info(:after_join, socket) do
+    Presence.track(socket, socket.assigns.current_user.id, %{
+      chat_id: socket.assigns.current_chat.id
+    })
+    {:noreply, socket}
   end
 
   def handle_in("message", %{"client_id" => client_id} = payload, socket) do
@@ -37,17 +45,10 @@ defmodule Typi.ChatChannel do
     end
   end
 
-  def handle_in("status", %{"id" => message_id, "status" => "received"}, socket) do
+  def handle_in("status", %{"id" => message_id, "status" => status}, socket) do
     # update status
-    statuses = update_status_and_get_statuses(message_id, "received", socket)
-    broadcast_if_status_changed(statuses, message_id, "received")
-    {:noreply, socket}
-  end
-
-  def handle_in("status", %{"id" => message_id, "status" => "read"}, socket) do
-    # update status
-    statuses = update_status_and_get_statuses(message_id, "read", socket)
-    broadcast_if_status_changed(statuses, message_id, "read")
+    statuses = update_status_and_get_statuses(message_id, status, socket)
+    broadcast_if_status_changed(statuses, message_id)
     {:noreply, socket}
   end
 
@@ -64,11 +65,15 @@ defmodule Typi.ChatChannel do
     {:noreply, socket}
   end
 
-  defp broadcast_if_status_changed(statuses, message_id, status) do
-    if change_message_status?(statuses, false) do
+  defp broadcast_if_status_changed(statuses, message_id) do
+    message = Amnesia.transaction do
+      Message.read(message_id)
+    end
+    current_status = min_status(statuses)
+    if message.status != current_status do
       message = Amnesia.transaction do
         Message.read(message_id)
-        |> Map.put(:status, status)
+        |> Map.put(:status, current_status)
         |> Message.write
       end
       Typi.Endpoint.broadcast "users:#{message.user_id}", "message:status", Map.take(message, [:id, :status])
@@ -89,15 +94,19 @@ defmodule Typi.ChatChannel do
     end
   end
 
-  defp change_message_status?([], accumulator) do
-    accumulator
+  defp min_status(statuses) do
+    min_status(statuses, "")
   end
 
-  defp change_message_status?([h | t], accumulator) do
-    if accumulator do
-      accumulator
-    else
-      change_message_status?(t, h.status == "sending")
+  defp min_status([], acc) do
+    acc
+  end
+
+  defp min_status([h | t], acc) do
+    cond do
+      h.status == "sending" -> "sending"
+      h.status == "received" or acc == "received" -> min_status(t, "received")
+      true -> min_status(t, "read") # h.status == "read" && acc == "read"
     end
   end
 
