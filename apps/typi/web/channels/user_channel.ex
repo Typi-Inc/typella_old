@@ -11,12 +11,16 @@ defmodule Typi.UserChannel do
   end
 
   def handle_info(:after_join, socket) do
-    Presence.track(socket, socket.assigns.current_user.id, %{})
     {:noreply, socket}
   end
 
   def handle_out("message:status", payload, socket) do
     push socket, "message:status", payload
+    {:noreply, socket}
+  end
+
+  def handle_out("message", payload, socket) do
+    push socket, "message", payload
     {:noreply, socket}
   end
 

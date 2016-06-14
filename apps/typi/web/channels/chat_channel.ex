@@ -2,6 +2,7 @@ defmodule Typi.ChatChannel do
   use Typi.Web, :channel
   use Amnesia
   use Typi.Database
+  require Logger
 
   def join("chats:" <> chat_id, _payload, socket) do
     if authorized?(chat_id, socket.assigns.current_user) do
@@ -9,7 +10,7 @@ defmodule Typi.ChatChannel do
         nil ->
           {:error, %{reason: "unauthorized"}}
         chat ->
-          send self(), :after_join
+          send self, :after_join
           {:ok, assign(socket, :current_chat, chat)}
       end
     else
@@ -18,13 +19,14 @@ defmodule Typi.ChatChannel do
   end
 
   def handle_info(:after_join, socket) do
-    Presence.track(socket, socket.assigns.current_user.id, %{
+    {:ok, _} = Presence.track(socket, socket.assigns.current_user.id, %{
       chat_id: socket.assigns.current_chat.id
     })
     {:noreply, socket}
   end
 
   def handle_in("message", %{"client_id" => client_id} = payload, socket) do
+    chat = Repo.preload(socket.assigns.current_chat, :users)
     changeset = Typi.Message.changeset(%Typi.Message{}, payload)
     if changeset.valid? do
       message =
@@ -36,9 +38,14 @@ defmodule Typi.ChatChannel do
           user_id: socket.assigns.current_user.id,
           status: "sending"
         })
-        |> insert_message(socket)
+        |> insert_message(socket, chat)
 
       broadcast_from socket, "message", Map.from_struct(message)
+      users_not_in_chat = get_users_not_in_chat(chat)
+      for user <- users_not_in_chat do
+        Typi.Endpoint.broadcast "users:#{user.id}", "message", Map.from_struct(message)
+        send_push_notifications(users_not_in_chat, message)
+      end
       {:reply, {:ok, %{id: message.id, client_id: client_id, status: message.status}}, socket}
     else
       {:reply, {:error, %{errors: changeset}}, socket}
@@ -63,6 +70,38 @@ defmodule Typi.ChatChannel do
   def handle_in("shout", payload, socket) do
     broadcast socket, "shout", payload
     {:noreply, socket}
+  end
+
+  defp send_push_notifications(users, message) do
+    # for user <- users do
+    #   message = APNS.Message.new
+    #   message = message
+    #   |> Map.put(:token, "0000000000000000000000000000000000000000000000000000000000000000")
+    #   |> Map.put(:alert, message)
+    #   |> Map.put(:badge, 42)
+    #   |> Map.put(:extra, %{
+    #     "var1" => "val1",
+    #     "var2" => "val2"
+    #   })
+    #   APNS.push :app1_dev_pool, message
+    # end
+  end
+
+  defp get_users_not_in_chat(chat) do
+    presences = Presence.list("chats:#{chat.id}")
+    difference(chat.users, presences, [])
+  end
+
+  defp difference([], _presences, acc) do
+    acc
+  end
+
+  defp difference([user | t], presences, acc) do
+    if presences[to_string(user.id)] do
+      difference(t, presences, acc)
+    else
+      difference(t, presences, acc ++ [user])
+    end
   end
 
   defp broadcast_if_status_changed(statuses, message_id) do
@@ -110,8 +149,7 @@ defmodule Typi.ChatChannel do
     end
   end
 
-  defp insert_message(message, socket) do
-    chat = Repo.preload(socket.assigns.current_chat, :users)
+  defp insert_message(message, socket, chat) do
     Amnesia.transaction do
       message = message |> Message.write
       for user <- chat.users, (fn user -> user.id != socket.assigns.current_user.id end).(user) do

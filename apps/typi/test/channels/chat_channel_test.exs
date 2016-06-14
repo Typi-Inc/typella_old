@@ -28,8 +28,7 @@ defmodule Typi.ChatChannelTest do
     chat = insert_chat(%Typi.Chat{
       users: [john, mike, sam, sara]
     })
-    {:ok, token, _full_claims} = Guardian.encode_and_sign(john, :token)
-    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
+    {:ok, socket} = connect_with_token(john)
     {:ok, socket: socket, users: [john, mike, sam, sara], chat: chat}
   end
 
@@ -57,29 +56,43 @@ defmodule Typi.ChatChannelTest do
     john_id = john.id
     assert %Message{body: "the body", client_id: 1, chat_id: ^chat_id, status: "sending", user_id: ^john_id} = message
 
-    mike_id = mike.id
-    sam_id = sam.id
     statuses = get_message_statuses(message.id)
     assert length(statuses) == 3
     assert_statuses([{mike.id, "sending"}, {sam.id, "sending"}, {sara.id, "sending"}], statuses)
   end
 
-  test "after message is received by the server, it broadcasts to all recipients currently in chat and sends push notification to others", %{socket: socket, users: [john, _mike, _sam, _sara], chat: chat} do
-    {:ok, _, socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
-    IO.inspect Presence.list(socket)
+  test "after message is received by the server, it broadcasts to all recipients currently in chat", %{socket: socket, users: [john, _mike, _sam, _sara], chat: chat} do
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
-    IO.inspect Presence.list(socket)
     _ref = push socket, "message", @message_attrs
     john_id = john.id
     assert_broadcast "message", %{id: _, body: "the body", created_at: _, user_id: ^john_id, status: "sending"}
   end
 
+  test "after message is received by the server it broadcasts to those who are not in the chat but are online, but not in chat", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
+    {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}")
+    Typi.Endpoint.subscribe "users:#{mike.id}"
+    push socket, "message", @message_attrs
+    john_id = john.id
+    assert_broadcast "message", %{id: _, body: "the body", created_at: _, user_id: ^john_id, status: "sending"}
+    topic = "users:#{mike.id}"
+    assert_receive %Phoenix.Socket.Broadcast{
+      topic: ^topic,
+      event: "message",
+      payload: %{id: _, body: "the body", created_at: _, user_id: ^john_id, status: "sending"}
+    }
+  end
+
+  # TODO
+  test "after message is received by the server it sends push notifications to those who are not in the chat" do
+
+  end
+
   test "When message is received by a recipient, recipient sends the status `received`, and if all statuses are `received` or `read`, it changes the status of the message and pushes it to owner", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
-    # connect to users:... channel in order to see the status being pushed via `message:status`
+    # connect to `users:...` channel in order to see the status being pushed via `message:status`
     {:ok, _, _user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
 
     # send message to chat channel from john
-    socket = send_message(socket, chat, @message_attrs)
+    send_message(socket, chat, @message_attrs)
 
     # get last message being stored
     message = get_message()
@@ -113,7 +126,7 @@ defmodule Typi.ChatChannelTest do
     {:ok, _, _user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
 
     # send message to chat channel from john
-    socket = send_message(socket, chat, @message_attrs)
+    send_message(socket, chat, @message_attrs)
 
     # get last message being stored
     message = get_message()
@@ -162,10 +175,15 @@ defmodule Typi.ChatChannelTest do
 
   defp send_message_status(user, chat, message, status) do
     # send `read` status from mike
-    {:ok, token, _full_claims} = Guardian.encode_and_sign(user, :token)
-    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
+    {:ok, socket} = connect_with_token(user)
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}", %{})
     push socket, "status", %{"id" => message.id, "status" => status}
+  end
+
+  defp connect_with_token(user) do
+    {:ok, token, _full_claims} = Guardian.encode_and_sign(user, :token)
+    {:ok, socket} = connect(Typi.UserSocket, %{"token" => token})
+    {:ok, socket}
   end
 
   defp get_message(message_id \\ false) do

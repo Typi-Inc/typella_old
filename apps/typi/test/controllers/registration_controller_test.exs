@@ -15,7 +15,7 @@ defmodule Typi.RegistrationControllerTest do
     with_mock Typi.OTP.InMemory, [generate_otp: fn -> "1234" end] do
       conn = post conn, registration_path(conn, :register), registration: @register_attrs
       assert json_response(conn, 200)
-      assert registration = Repo.get_by(Registration, @register_attrs)
+      registration = Repo.get_by(Registration, @register_attrs)
       refute registration.otp
       assert called Typi.OTP.InMemory.generate_otp
       assert Comeonin.Bcrypt.checkpw("1234", registration.otp_hash)
