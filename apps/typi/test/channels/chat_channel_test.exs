@@ -87,7 +87,7 @@ defmodule Typi.ChatChannelTest do
 
   end
 
-  test "When message is received by a recipient, recipient sends the status `received`, and if all statuses are `received` or `read`, it changes the status of the message and pushes it to owner", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
+  test "When message is received by a recipient, recipient sends the status `received`, and if all statuses are `received` or `read`, it changes the status of the message and pushes it to owner via broadcast or APN", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
     # connect to `users:...` channel in order to see the status being pushed via `message:status`
     {:ok, _, _user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
 
@@ -121,7 +121,7 @@ defmodule Typi.ChatChannelTest do
     assert_push "message:status", %{id: ^message_id, status: "received"}
   end
 
-  test "when message is read, recipient sends the status `read`, which is pushed at owner", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
+  test "when message is read, recipient sends the status `read`, which is pushed at owner via broadcast or APN", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
     # connect to users:... channel in order to see the status being pushed via `message:status`
     {:ok, _, _user_socket} = subscribe_and_join(socket, "users:#{john.id}", %{})
 
