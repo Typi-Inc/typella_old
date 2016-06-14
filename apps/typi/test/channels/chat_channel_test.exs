@@ -68,7 +68,7 @@ defmodule Typi.ChatChannelTest do
     assert_broadcast "message", %{id: _, body: "the body", created_at: _, user_id: ^john_id, status: "sending"}
   end
 
-  test "after message is received by the server it broadcasts to those who are not in the chat but are online, but not in chat", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
+  test "after message is received by the server it broadcasts to those who are not in the chat but are online", %{socket: socket, users: [john, mike, sam, sara], chat: chat} do
     {:ok, _, socket} = subscribe_and_join(socket, "chats:#{chat.id}")
     Typi.Endpoint.subscribe "users:#{mike.id}"
     push socket, "message", @message_attrs
