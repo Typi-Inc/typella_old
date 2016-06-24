@@ -36,9 +36,9 @@ defmodule Typi.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, git: "https://github.com/phoenixframework/phoenix"},
-      {:phoenix_pubsub, git: "https://github.com/phoenixframework/phoenix_pubsub", override: true},
-      {:phoenix_ecto, git: "https://github.com/phoenixframework/phoenix_ecto", override: true},
+      {:phoenix, "~> 1.2"},
+      {:phoenix_pubsub, "~> 1.0"},
+      {:phoenix_ecto, "~> 3.0"},
       {:httpotion, "~> 3.0.0", override: true},
       {:postgrex, ">= 0.0.0"},
       {:gettext, "~> 0.11"},

@@ -1,5 +1,5 @@
 defmodule Typi.GuardianSerializer do
-  @behaviour Typi.Serializer
+  @behaviour Guardian.Serializer
 
   alias Typi.{Repo, User}
 
