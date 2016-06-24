@@ -4,11 +4,9 @@ defdatabase Typi.Database do
   deftable Message, [
     {:id, autoincrement },
     :body,
-    :client_id,
     :chat_id,
     :created_at,
     :publish_at,
-    :show_true_date,
     :status,
     :user_id
   ], type: :set, index: [:chat_id] do
@@ -16,11 +14,9 @@ defdatabase Typi.Database do
     @type t :: %Message{
       id: non_neg_integer,
       body: String.t,
-      client_id: non_neg_integer,
       chat_id: non_neg_integer,
       created_at: non_neg_integer,
       publish_at: non_neg_integer,
-      show_true_date: boolean,
       status: String.t,
       user_id: non_neg_integer
     }

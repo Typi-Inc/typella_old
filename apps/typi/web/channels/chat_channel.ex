@@ -25,7 +25,7 @@ defmodule Typi.ChatChannel do
     {:noreply, socket}
   end
 
-  def handle_in("message", %{"client_id" => client_id} = payload, socket) do
+  def handle_in("message", payload, socket) do
     chat = Repo.preload(socket.assigns.current_chat, :users)
     changeset = Typi.Message.changeset(%Typi.Message{}, payload)
     if changeset.valid? do
@@ -43,10 +43,15 @@ defmodule Typi.ChatChannel do
       broadcast_from socket, "message", Map.from_struct(message)
       users_not_in_chat = get_users_not_in_chat(chat)
       for user <- users_not_in_chat do
-        Typi.Endpoint.broadcast "users:#{user.id}", "message", Map.from_struct(message)
+        Typi.Endpoint.broadcast "users:#{user.id}", "message", to_camel_case(message)
         send_push_notifications(users_not_in_chat, message)
       end
-      {:reply, {:ok, %{id: message.id, client_id: client_id, status: message.status}}, socket}
+      response =
+        message
+        |> Map.take([:id, :created_at, :status])
+        |> to_camel_case
+      IO.inspect response
+      {:reply, {:ok, response}, socket}
     else
       {:reply, {:error, %{errors: changeset}}, socket}
     end
@@ -59,17 +64,31 @@ defmodule Typi.ChatChannel do
     {:noreply, socket}
   end
 
-  # Channels can be used in a request/response fashion
-  # by sending replies to requests from the client
-  def handle_in("ping", payload, socket) do
-    {:reply, {:ok, payload}, socket}
+  defp to_camel_case(message) do
+    map = if Map.has_key?(message, :__struct__) do
+      message
+        |> Map.from_struct
+      else
+        message
+      end
+
+    to_camel_case(map, Map.keys(map), %{})
   end
 
-  # It is also common to receive messages from the client and
-  # broadcast to everyone in the current topic (chat:lobby).
-  def handle_in("shout", payload, socket) do
-    broadcast socket, "shout", payload
-    {:noreply, socket}
+  defp to_camel_case(_map, [], json) do
+    json
+  end
+
+  defp to_camel_case(map, [key | t], json) do
+    new_key = key
+      |> to_string
+      |> string_to_camel_case
+
+    to_camel_case(map, t, Map.put(json, new_key, map[key]))
+  end
+
+  defp string_to_camel_case(string) do
+    Regex.replace(~r/_(.)/, string, fn _, group -> String.upcase(group) end)
   end
 
   defp send_push_notifications(users, message) do

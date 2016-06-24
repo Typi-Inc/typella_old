@@ -39,6 +39,7 @@ defmodule Typi.Mixfile do
       {:phoenix, git: "https://github.com/phoenixframework/phoenix"},
       {:phoenix_pubsub, git: "https://github.com/phoenixframework/phoenix_pubsub", override: true},
       {:phoenix_ecto, git: "https://github.com/phoenixframework/phoenix_ecto", override: true},
+      {:httpotion, "~> 3.0.0", override: true},
       {:postgrex, ">= 0.0.0"},
       {:gettext, "~> 0.11"},
       {:cowboy, "~> 1.0"},

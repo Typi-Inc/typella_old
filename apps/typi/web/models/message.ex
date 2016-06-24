@@ -4,17 +4,11 @@ defmodule Typi.Message do
 
   embedded_schema do
     field :body, :string
-    field :client_id, :integer
     field :chat_id, :integer
     field :created_at, :integer
     field :publish_at, :integer
-    field :show_true_date, :boolean
     field :status, :string
     field :user_id, :integer
-    # belongs_to :sender, Typi.User
-    # belongs_to :chat, Typi.Chat
-
-    # timestamps
   end
 
   @doc """
@@ -22,8 +16,8 @@ defmodule Typi.Message do
   """
   def changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:body, :client_id, :chat_id, :created_at, :publish_at, :show_true_date, :status, :user_id])
-    |> validate_required([:body, :client_id, :created_at])
+    |> cast(params, [:body, :chat_id, :created_at, :publish_at, :status, :user_id])
+    |> validate_required([:body, :created_at])
   end
 
   def to_amnesia_message(struct) do
