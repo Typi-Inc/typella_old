@@ -14,6 +14,13 @@ defmodule Typi.UserChannel do
     {:noreply, socket}
   end
 
+  def handle_in("status", %{"id" => message_id, "status" => status} = payload, socket) do
+    IO.inspect payload
+    statuses = Typi.ChatChannel.update_status_and_get_statuses(message_id, status, socket)
+    Typi.ChatChannel.broadcast_if_status_changed(statuses, message_id)
+    {:noreply, socket}
+  end
+
   def handle_out("message:status", payload, socket) do
     push socket, "message:status", payload
     {:noreply, socket}

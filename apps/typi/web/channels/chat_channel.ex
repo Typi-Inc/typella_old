@@ -40,7 +40,7 @@ defmodule Typi.ChatChannel do
         })
         |> insert_message(socket, chat)
 
-      broadcast_from socket, "message", Map.from_struct(message)
+      broadcast_from socket, "message", message |> Map.from_struct |> to_camel_case
       users_not_in_chat = get_users_not_in_chat(chat)
       for user <- users_not_in_chat do
         Typi.Endpoint.broadcast "users:#{user.id}", "message", to_camel_case(message)
@@ -50,14 +50,23 @@ defmodule Typi.ChatChannel do
         message
         |> Map.take([:id, :created_at, :status])
         |> to_camel_case
-      IO.inspect response
       {:reply, {:ok, response}, socket}
     else
       {:reply, {:error, %{errors: changeset}}, socket}
     end
   end
 
-  def handle_in("status", %{"id" => message_id, "status" => status}, socket) do
+  def handle_in("statuses", %{"statuses" => statuses}, socket) do
+    IO.inspect statuses
+    for status <- statuses do
+      handle_in("status", status, socket)
+    end
+    {:noreply, socket}
+  end
+
+  def handle_in("status", %{"id" => message_id, "status" => status} = payload, socket) do
+    # TODO probably need to move this to user_channel
+    IO.inspect payload
     # update status
     statuses = update_status_and_get_statuses(message_id, status, socket)
     broadcast_if_status_changed(statuses, message_id)
@@ -123,7 +132,7 @@ defmodule Typi.ChatChannel do
     end
   end
 
-  defp broadcast_if_status_changed(statuses, message_id) do
+  def broadcast_if_status_changed(statuses, message_id) do
     message = Amnesia.transaction do
       Message.read(message_id)
     end
@@ -138,7 +147,7 @@ defmodule Typi.ChatChannel do
     end
   end
 
-  defp update_status_and_get_statuses(m_id, status, socket) do
+  def update_status_and_get_statuses(m_id, status, socket) do
     Amnesia.transaction do
       selection = Status.where message_id == m_id and recipient_id == socket.assigns.current_user.id, select: [id]
       [[status_id]] = selection |> Amnesia.Selection.values

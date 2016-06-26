@@ -155,6 +155,11 @@ defmodule Typi.ChatChannelTest do
     assert_push "message:status", %{id: ^message_id, status: "read"}
   end
 
+  test "recipient sends the status 'seen' of the last message and all messages in the chat are marked as seen" do
+    # TODO
+    refute true
+  end
+
   defp assert_statuses(ids_statuses, statuses) do
     statuses_to_assert =
       ids_statuses
