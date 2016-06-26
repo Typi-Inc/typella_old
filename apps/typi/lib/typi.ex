@@ -15,6 +15,8 @@ defmodule Typi do
       # Start your own worker by calling: Typi.Worker.start_link(arg1, arg2, arg3)
       # worker(Typi.Worker, [arg1, arg2, arg3]),
       supervisor(Typi.Presence, []),
+
+      supervisor(Typi.FutureMessage, [Typi.FutureMessage])
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html

@@ -8,8 +8,9 @@ defdatabase Typi.Database do
     :created_at,
     :publish_at,
     :status,
+    :future_handled,
     :user_id
-  ], type: :set, index: [:chat_id] do
+  ], type: :set, index: [:chat_id, :publish_at] do
 		#Nice to have, we declare a struct that represents a record in the database
     @type t :: %Message{
       id: non_neg_integer,
@@ -18,6 +19,7 @@ defdatabase Typi.Database do
       created_at: non_neg_integer,
       publish_at: non_neg_integer,
       status: String.t,
+      future_handled: boolean,
       user_id: non_neg_integer
     }
   end

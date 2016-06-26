@@ -31,3 +31,4 @@ config :typi, Typi.Repo,
 
 config :typi, :otp, Typi.OTP
 config :typi, :twilio_api, ExTwilio
+config :typi, :future_message, 20000
