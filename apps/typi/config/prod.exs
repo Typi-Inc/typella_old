@@ -20,6 +20,8 @@ config :typi, Typi.Endpoint,
 config :logger, level: :info
 config :typi, :otp, Typi.OTP
 config :typi, :twilio_api, ExTwilio
+config :typi, :future_message, 20000
+
 
 # ## SSL Support
 #

@@ -20,3 +20,4 @@ config :typi, Typi.Repo,
 
 config :typi, :otp, Typi.OTP.InMemory
 config :typi, :twilio_api, Typi.ExTwilio.InMemory
+config :typi, :future_message, 100
