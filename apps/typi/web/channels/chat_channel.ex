@@ -29,7 +29,9 @@ defmodule Typi.ChatChannel do
     # status is one of ["typing", "not typing"]
     chat = Repo.preload(socket.assigns.current_chat, :users)
     users_in_chat = get_users_in_chat(chat)
-    for user <- users_in_chat do
+    IO.inspect users_in_chat
+    for user <- users_in_chat, (fn user -> user.id != socket.assigns.current_user.id end).(user) do
+      IO.puts "users:#{user.id}"
       Typi.Endpoint.broadcast "users:#{user.id}", "typing", %{
         chat_id: chat.id,
         user_id: user.id,
@@ -142,9 +144,9 @@ defmodule Typi.ChatChannel do
 
   defp intersection([user | t], presences, acc) do
     if presences[to_string(user.id)] do
-      difference(t, presences, acc ++ [user])
+      intersection(t, presences, acc ++ [user])
     else
-      difference(t, presences, acc)
+      intersection(t, presences, acc)
     end
   end
 
