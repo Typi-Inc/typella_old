@@ -25,7 +25,22 @@ defmodule Typi.ChatChannel do
     {:noreply, socket}
   end
 
+  def handle_in("typing", %{"status" => status}, socket) do
+    # status is one of ["typing", "not typing"]
+    chat = Repo.preload(socket.assigns.current_chat, :users)
+    users_in_chat = get_users_in_chat(chat)
+    for user <- users_in_chat do
+      Typi.Endpoint.broadcast "users:#{user.id}", "typing", %{
+        chat_id: chat.id,
+        user_id: user.id,
+        status: status
+      } |> to_camel_case
+    end
+    {:noreply, socket}
+  end
+
   def handle_in("message", payload, socket) do
+    IO.inspect payload
     chat = Repo.preload(socket.assigns.current_chat, :users)
     changeset = Typi.Message.changeset(%Typi.Message{}, payload)
     if changeset.valid? do
@@ -36,6 +51,7 @@ defmodule Typi.ChatChannel do
         |> Map.merge(%{
           chat_id: socket.assigns.current_chat.id,
           user_id: socket.assigns.current_user.id,
+          future_handled: true,
           status: "sending"
         })
         |> insert_message(socket, chat)
@@ -113,6 +129,23 @@ defmodule Typi.ChatChannel do
     #   })
     #   APNS.push :app1_dev_pool, message
     # end
+  end
+
+  defp get_users_in_chat(chat) do
+    presences = Presence.list("chats:#{chat.id}")
+    intersection(chat.users, presences, [])
+  end
+
+  defp intersection([], _presences, acc) do
+    acc
+  end
+
+  defp intersection([user | t], presences, acc) do
+    if presences[to_string(user.id)] do
+      difference(t, presences, acc ++ [user])
+    else
+      difference(t, presences, acc)
+    end
   end
 
   defp get_users_not_in_chat(chat) do

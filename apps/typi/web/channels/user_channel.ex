@@ -11,6 +11,7 @@ defmodule Typi.UserChannel do
   end
 
   def handle_info(:after_join, socket) do
+    {:ok, _} = Presence.track(socket, socket.assigns.current_user.id, %{})
     {:noreply, socket}
   end
 
@@ -18,6 +19,11 @@ defmodule Typi.UserChannel do
     IO.inspect payload
     statuses = Typi.ChatChannel.update_status_and_get_statuses(message_id, status, socket)
     Typi.ChatChannel.broadcast_if_status_changed(statuses, message_id)
+    {:noreply, socket}
+  end
+
+  def handle_out("typing", payload, socket) do
+    push socket, "typing", payload
     {:noreply, socket}
   end
 

@@ -1,4 +1,4 @@
-defmodule Typi.ChatTest do
+defmodule Typi.FutureMessageTest do
   use ExUnit.Case, async: true
   alias Typi.Repo
   import Typi.Router.Helpers
@@ -74,7 +74,7 @@ defmodule Typi.ChatTest do
      end
 
 
-    
+
   end
 
   defp insert_random_message() do

@@ -49,7 +49,6 @@ defmodule Typi.Mixfile do
       {:guardian, "~> 0.11.1"},
       {:amnesia, "~> 0.2.4"},
       {:mock, "~> 0.1.1", only: :test},
-      {:timex, "~> 2.2.1"}
     ]
   end
 

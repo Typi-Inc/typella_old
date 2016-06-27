@@ -3,7 +3,6 @@ defmodule Typi.FutureMessage do
 	use Amnesia
 	import Logger
 	use Typi.Database
-	use Timex
 
 	@interval Application.get_env(:typi, :future_message)
 
@@ -21,9 +20,8 @@ defmodule Typi.FutureMessage do
  		# task = Task.async(fn -> set_future_handled(messages) end)
  		# Task.await(task)
  		set_future_handled(messages)
- 		Logger.info "hello in handle info"
  		# broadcast_messages_to_send(messages_to_send)
-    	Process.send_after(self(), :work, 20000) 
+    	Process.send_after(self(), :work, 20000)
     	{:noreply, state}
   	end
 
@@ -34,8 +32,8 @@ defmodule Typi.FutureMessage do
   	def set_future_handled(messages) do
   		Amnesia.transaction do
   			for message <- messages do
-  				message 
-  				|> Map.put(:future_handled, true) 
+  				message
+  				|> Map.put(:future_handled, true)
   				|> Message.write
   			end
   		end
@@ -47,8 +45,8 @@ defmodule Typi.FutureMessage do
 		Amnesia.transaction do
 			selection = Message.where publish_at <= now and future_handled==false,
 				select: id
-			messages = selection 
-			|> Amnesia.Selection.values 
+			messages = selection
+			|> Amnesia.Selection.values
 			|> Enum.map(&Message.read(&1))
 			# IO.inspect messages
 			messages
@@ -56,7 +54,7 @@ defmodule Typi.FutureMessage do
 	end
 
 	# def broadcast_messages_to_send(messages) do
-		
+
 	# end
 
 

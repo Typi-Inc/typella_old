@@ -3,6 +3,7 @@ defmodule Typi.UserSocket do
 
   ## Channels
   channel "chats:*", Typi.ChatChannel
+  channel "user:presence", Typi.UserPresenceChannel
   channel "users:*", Typi.UserChannel
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
