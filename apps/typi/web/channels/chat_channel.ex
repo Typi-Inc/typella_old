@@ -40,6 +40,30 @@ defmodule Typi.ChatChannel do
     end
     {:noreply, socket}
   end
+  def handle_in("fm", payload, socket) do
+    chat = socket.assigns.current_chat
+    changeset=Typi.Message.changeset(%Typi.Message{}, payload)
+    if changeset.valid? do
+      message=
+        changeset
+        |>Ecto.Changeset.apply_changes
+        |>Typi.Message.to_amnesia_message
+        |> Map.merge(%{
+          chat_id: socket.assigns.current_chat.id,
+          user_id: socket.assigns.current_user.id,
+          future_handled: false,
+          status: "sending",
+        })
+        |> insert_message(socket, chat)
+      response =
+        message
+        |> Map.take([:id, :created_at, :status])
+        |> to_camel_case
+        {:reply, {:ok, response}, socket}
+    else 
+      {:reply, {:error, %{errors: changeset}}, socket}
+    end
+  end
 
   def handle_in("message", payload, socket) do
     IO.inspect payload
@@ -88,6 +112,10 @@ defmodule Typi.ChatChannel do
     # update status
     statuses = update_status_and_get_statuses(message_id, status, socket)
     broadcast_if_status_changed(statuses, message_id)
+    {:noreply, socket}
+  end
+  def handle_out("message", message, socket) do
+    push socket  message |> Map.from_struct |> to_camel_case
     {:noreply, socket}
   end
 

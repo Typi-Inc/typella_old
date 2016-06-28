@@ -1,7 +1,6 @@
 defmodule Typi.FutureMessage do
 	use GenServer
 	use Amnesia
-	import Logger
 	use Typi.Database
 
 	@interval Application.get_env(:typi, :future_message)
@@ -17,10 +16,8 @@ defmodule Typi.FutureMessage do
 
  	def handle_info(:work, state) do
  		messages=messages_to_send
- 		# task = Task.async(fn -> set_future_handled(messages) end)
- 		# Task.await(task)
- 		set_future_handled(messages)
- 		# broadcast_messages_to_send(messages_to_send)
+ 		Task.async(fn -> set_future_handled(messages) end)
+ 		Task.async(fn -> broadcast_messages(messages) end)
     	Process.send_after(self(), :work, 20000)
     	{:noreply, state}
   	end
@@ -41,21 +38,30 @@ defmodule Typi.FutureMessage do
 
 	def messages_to_send do
 		now = :os.system_time(:milli_seconds)+30000
-		messages=[]
 		Amnesia.transaction do
 			selection = Message.where publish_at <= now and future_handled==false,
 				select: id
 			messages = selection
 			|> Amnesia.Selection.values
 			|> Enum.map(&Message.read(&1))
-			# IO.inspect messages
 			messages
 		end
 	end
 
-	# def broadcast_messages_to_send(messages) do
+	def sort(messages) do
+		Enum.sort(messages, fn(m1,m2) ->
+			if abs(m1.publish_at-m2.publish_at)<30000 do
+				m1.created_at>m2.created_at
+			else
+				m1.publish_at>m2.publish_at
+			end
+		end)
+	end
 
-	# end
-
+	def broadcast_messages(messages) do
+		for message <- sort(messages) do
+			Typi.Endpoint.broadcast "chats:#{message.chat_id}", "message", message
+		end
+	end
 
 end
