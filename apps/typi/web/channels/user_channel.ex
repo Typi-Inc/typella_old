@@ -3,6 +3,8 @@ defmodule Typi.UserChannel do
   use Amnesia
   use Typi.Database
 
+  # intercept ["message", "status", "typing"]
+
   def join("users:" <> user_id, _payload, socket) do
     if authorized?(user_id, socket) do
       send self(), :after_join
@@ -31,21 +33,22 @@ defmodule Typi.UserChannel do
     broadcast_if_status_changed(statuses, message_id)
     {:noreply, socket}
   end
-
-  def handle_out("typing", payload, socket) do
-    push socket, "typing", payload
-    {:noreply, socket}
-  end
-
-  def handle_out("message:status", payload, socket) do
-    push socket, "message:status", payload
-    {:noreply, socket}
-  end
-
-  def handle_out("message", payload, socket) do
-    push socket, "message", payload
-    {:noreply, socket}
-  end
+  # 
+  # def handle_out("typing", payload, socket) do
+  #   push socket, "typing", payload
+  #   {:noreply, socket}
+  # end
+  #
+  # def handle_out("status", payload, socket) do
+  #   IO.puts "handle out on status has been called"
+  #   push socket, "status", payload
+  #   {:noreply, socket}
+  # end
+  #
+  # def handle_out("message", payload, socket) do
+  #   push socket, "message", payload
+  #   {:noreply, socket}
+  # end
 
   def broadcast_if_status_changed(statuses, message_id) do
     message = Amnesia.transaction do
@@ -58,7 +61,7 @@ defmodule Typi.UserChannel do
         |> Map.put(:status, current_status)
         |> Message.write
       end
-      Typi.Endpoint.broadcast "users:#{message.user_id}", "message:status", Map.take(message, [:id, :status])
+      Typi.Endpoint.broadcast "users:#{message.user_id}", "status", Map.take(message, [:id, :status])
     end
   end
 
