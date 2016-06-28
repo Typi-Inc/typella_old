@@ -71,7 +71,7 @@ defmodule Typi.ChatChannel do
       IO.puts "users:#{user.id}"
       Typi.Endpoint.broadcast "users:#{user.id}", "typing", %{
         chat_id: chat.id,
-        user_id: user.id,
+        user_id: socket.assigns.current_user.id,
         status: status
       } |> to_camel_case
     end
