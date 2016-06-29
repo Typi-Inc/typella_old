@@ -11,8 +11,9 @@ defmodule Typi.RegistrationController do
   plug :scrub_params, "registration" when action in [:register]
   plug :scrub_params, "verification" when action in [:verify]
 
-  def register(conn, %{"registration" => registration_params}) do
+  def register(conn, %{"registration" => %{"country_code" => _, "number" => _, "uuid" => _} = registration_params}) do
     otp = @otp.generate_otp
+    IO.inspect otp
     registration_params
     |> Map.take([:country_code, :number, :uuid])
     |> get_registration
@@ -30,20 +31,20 @@ defmodule Typi.RegistrationController do
     end
   end
 
-  def verify(conn, %{"verification" => %{"country_code" => country_code, "number" => number, "code" => otp}}) do
+  def verify(conn, %{"verification" => %{"country_code" => country_code, "number" => number, "code" => otp} = verification}) do
     with {:ok, registration} <- get_registration(country_code, number),
       {:ok, _registration} <- validate_otp(registration, otp),
       {:ok, user} <- update_or_insert_user(registration),
       {:ok, jwt, _full_claims} = encode_and_sign(user),
       {:ok, _registration} = Repo.delete(registration)
     do
-      {:ok, jwt}
+      {:ok, jwt, user}
     end
     |> case do
-      {:ok, jwt} ->
+      {:ok, jwt, user} ->
         conn
         |> put_status(:created)
-        |> json(%{jwt: jwt})
+        |> json(%{jwt: jwt, id: user.id})
         # |> render("verified.json", jwt: jwt, user: user)
       {:error, reasons} ->
         conn
