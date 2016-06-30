@@ -51,7 +51,7 @@ defmodule Typi.ChatChannel do
         |> Map.take([:id, :created_at, :status])
         |> to_camel_case
         {:reply, {:ok, response}, socket}
-    else 
+    else
       {:reply, {:error, %{errors: changeset}}, socket}
     end
   end
@@ -101,7 +101,7 @@ defmodule Typi.ChatChannel do
     end
   end
   def handle_out("message", message, socket) do
-    push socket  message |> Map.from_struct |> to_camel_case
+    push socket, "message", message |> Map.from_struct |> to_camel_case
     {:noreply, socket}
   end
 
