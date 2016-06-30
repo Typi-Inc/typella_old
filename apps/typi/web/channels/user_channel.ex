@@ -19,8 +19,11 @@ defmodule Typi.UserChannel do
     {:noreply, socket}
   end
 
+  def handle_in("contacts", %{"contacts" => contacts}, socket) do
+    
+  end
+
   def handle_in("statuses", %{"statuses" => statuses}, socket) do
-    IO.inspect statuses
     for status <- statuses do
       handle_in("status", status, socket)
     end
@@ -28,12 +31,11 @@ defmodule Typi.UserChannel do
   end
 
   def handle_in("status", %{"id" => message_id, "status" => status} = payload, socket) do
-    IO.inspect payload
     statuses = update_status_and_get_statuses(message_id, status, socket)
     broadcast_if_status_changed(statuses, message_id)
     {:noreply, socket}
   end
-  # 
+  #
   # def handle_out("typing", payload, socket) do
   #   push socket, "typing", payload
   #   {:noreply, socket}
