@@ -28,16 +28,7 @@ defmodule Typi.ChatChannel do
   def handle_in("typing", %{"status" => status}, socket) do
     # status is one of ["typing", "not typing"]
     chat = Repo.preload(socket.assigns.current_chat, :users)
-    users_in_chat = get_users_in_chat(chat)
-    IO.inspect users_in_chat
-    for user <- users_in_chat, (fn user -> user.id != socket.assigns.current_user.id end).(user) do
-      IO.puts "users:#{user.id}"
-      Typi.Endpoint.broadcast "users:#{user.id}", "typing", %{
-        chat_id: chat.id,
-        user_id: user.id,
-        status: status
-      } |> to_camel_case
-    end
+    broadcast_typing(chat, status, socket)
     {:noreply, socket}
   end
   def handle_in("fm", payload, socket) do
@@ -83,6 +74,7 @@ defmodule Typi.ChatChannel do
         |> insert_message(socket, chat)
 
       broadcast_from socket, "message", message |> Map.from_struct |> to_camel_case
+      broadcast_typing(chat, "not typing", socket)
       users_not_in_chat = get_users_not_in_chat(chat)
       for user <- users_not_in_chat do
         Typi.Endpoint.broadcast "users:#{user.id}", "message", to_camel_case(message)
@@ -98,21 +90,15 @@ defmodule Typi.ChatChannel do
     end
   end
 
-  def handle_in("statuses", %{"statuses" => statuses}, socket) do
-    IO.inspect statuses
-    for status <- statuses do
-      handle_in("status", status, socket)
+  defp broadcast_typing(chat, status, socket) do
+    for user <- chat.users, (fn user -> user.id != socket.assigns.current_user.id end).(user) do
+      IO.puts "users:#{user.id}"
+      Typi.Endpoint.broadcast "users:#{user.id}", "typing", %{
+        chat_id: chat.id,
+        user_id: socket.assigns.current_user.id,
+        status: status
+      } |> to_camel_case
     end
-    {:noreply, socket}
-  end
-
-  def handle_in("status", %{"id" => message_id, "status" => status} = payload, socket) do
-    # TODO probably need to move this to user_channel
-    IO.inspect payload
-    # update status
-    statuses = update_status_and_get_statuses(message_id, status, socket)
-    broadcast_if_status_changed(statuses, message_id)
-    {:noreply, socket}
   end
   def handle_out("message", message, socket) do
     push socket  message |> Map.from_struct |> to_camel_case
@@ -161,23 +147,6 @@ defmodule Typi.ChatChannel do
     # end
   end
 
-  defp get_users_in_chat(chat) do
-    presences = Presence.list("chats:#{chat.id}")
-    intersection(chat.users, presences, [])
-  end
-
-  defp intersection([], _presences, acc) do
-    acc
-  end
-
-  defp intersection([user | t], presences, acc) do
-    if presences[to_string(user.id)] do
-      intersection(t, presences, acc ++ [user])
-    else
-      intersection(t, presences, acc)
-    end
-  end
-
   defp get_users_not_in_chat(chat) do
     presences = Presence.list("chats:#{chat.id}")
     difference(chat.users, presences, [])
@@ -192,51 +161,6 @@ defmodule Typi.ChatChannel do
       difference(t, presences, acc)
     else
       difference(t, presences, acc ++ [user])
-    end
-  end
-
-  def broadcast_if_status_changed(statuses, message_id) do
-    message = Amnesia.transaction do
-      Message.read(message_id)
-    end
-    current_status = min_status(statuses)
-    if message.status != current_status do
-      message = Amnesia.transaction do
-        Message.read(message_id)
-        |> Map.put(:status, current_status)
-        |> Message.write
-      end
-      Typi.Endpoint.broadcast "users:#{message.user_id}", "message:status", Map.take(message, [:id, :status])
-    end
-  end
-
-  def update_status_and_get_statuses(m_id, status, socket) do
-    Amnesia.transaction do
-      selection = Status.where message_id == m_id and recipient_id == socket.assigns.current_user.id, select: [id]
-      [[status_id]] = selection |> Amnesia.Selection.values
-
-      status_id
-      |> Status.read
-      |> Map.put(:status, status)
-      |> Status.write
-
-      Status.read_at(m_id, :message_id)
-    end
-  end
-
-  defp min_status(statuses) do
-    min_status(statuses, "")
-  end
-
-  defp min_status([], acc) do
-    acc
-  end
-
-  defp min_status([h | t], acc) do
-    cond do
-      h.status == "sending" -> "sending"
-      h.status == "received" or acc == "received" -> min_status(t, "received")
-      true -> min_status(t, "read") # h.status == "read" && acc == "read"
     end
   end
 
