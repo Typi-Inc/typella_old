@@ -20,7 +20,7 @@ defmodule Typi.UserChannel do
   end
 
   def handle_in("contacts", %{"contacts" => contacts}, socket) do
-    
+
   end
 
   def handle_in("statuses", %{"statuses" => statuses}, socket) do
@@ -70,6 +70,8 @@ defmodule Typi.UserChannel do
   def update_status_and_get_statuses(m_id, status, socket) do
     Amnesia.transaction do
       selection = Status.where message_id == m_id and recipient_id == socket.assigns.current_user.id, select: [id]
+      IO.puts "yoyoyoyoyoyoyoyoyoyoyoyoyoy"
+      IO.inspect selection |> Amnesia.Selection.values
       [[status_id]] = selection |> Amnesia.Selection.values
 
       status_id

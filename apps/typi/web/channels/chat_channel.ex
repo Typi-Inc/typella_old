@@ -4,6 +4,8 @@ defmodule Typi.ChatChannel do
   use Typi.Database
   require Logger
 
+  intercept ["fm"]
+
   def join("chats:" <> chat_id, _payload, socket) do
     if authorized?(chat_id, socket.assigns.current_user) do
       case Repo.get(Typi.Chat, chat_id) do
@@ -31,6 +33,7 @@ defmodule Typi.ChatChannel do
     broadcast_typing(chat, status, socket)
     {:noreply, socket}
   end
+
   def handle_in("fm", payload, socket) do
     chat = socket.assigns.current_chat
     changeset=Typi.Message.changeset(%Typi.Message{}, payload)
@@ -68,25 +71,32 @@ defmodule Typi.ChatChannel do
         |> Map.merge(%{
           chat_id: socket.assigns.current_chat.id,
           user_id: socket.assigns.current_user.id,
-          future_handled: true,
+          future_handled: if Map.has_key?(payload, :publish_at) do true else false end,
           status: "sending"
         })
         |> insert_message(socket, chat)
 
-      broadcast_from socket, "message", message |> Map.from_struct |> to_camel_case
-      broadcast_typing(chat, "not typing", socket)
-      users_not_in_chat = get_users_not_in_chat(chat)
-      for user <- users_not_in_chat do
-        Typi.Endpoint.broadcast "users:#{user.id}", "message", to_camel_case(message)
-        send_push_notifications(users_not_in_chat, message)
+      if !Map.has_key?(payload, "publish_at") do
+        broadcast_message(message, chat, socket)
       end
       response =
         message
-        |> Map.take([:id, :created_at, :status])
+        |> Map.take([:id, :created_at, :status, :publish_at])
         |> to_camel_case
       {:reply, {:ok, response}, socket}
     else
       {:reply, {:error, %{errors: changeset}}, socket}
+    end
+  end
+
+  def broadcast_message(message, chat, socket) do
+    broadcast_from socket, "message", message |> Map.from_struct |> to_camel_case
+    IO.puts "asdasdasdasdasdasdasdasdasdasdasdasdasdasdsadasdasdas"
+    broadcast_typing(chat, "not typing", socket)
+    users_not_in_chat = get_users_not_in_chat(chat)
+    for user <- users_not_in_chat do
+      Typi.Endpoint.broadcast "users:#{user.id}", "message", to_camel_case(message)
+      send_push_notifications(users_not_in_chat, message)
     end
   end
 
@@ -100,8 +110,19 @@ defmodule Typi.ChatChannel do
       } |> to_camel_case
     end
   end
-  def handle_out("message", message, socket) do
-    push socket, "message", message |> Map.from_struct |> to_camel_case
+
+  def handle_out("fm", message, socket) do
+    IO.puts "Here is the future message"
+    IO.inspect message
+    chat = Repo.get(Typi.Chat, message.chat_id)
+    chat = Repo.preload(socket.assigns.current_chat, :users)
+    broadcast socket, "message", message |> Map.from_struct |> to_camel_case
+    broadcast_typing(chat, "not typing", socket)
+    users_not_in_chat = get_users_not_in_chat(chat)
+    for user <- users_not_in_chat do
+      Typi.Endpoint.broadcast "users:#{user.id}", "message", to_camel_case(message)
+      send_push_notifications(users_not_in_chat, message)
+    end
     {:noreply, socket}
   end
 
